@@ -24,7 +24,7 @@ export default function Login({ onSuccess }: LoginProps): React.ReactElement {
     if (typeof onSuccess === 'function') {
       onSuccess();
     } else {
-      navigate('./Calendar');
+      navigate('/calendar');
     }
   };
 
