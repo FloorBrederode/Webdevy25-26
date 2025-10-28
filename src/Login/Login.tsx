@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { canLogin, DEMO_EMAIL, DEMO_PASS, type LoginErrors } from './auth';
+import { canLogin, type LoginErrors } from './auth';
 import './Login.css';
 
 type LoginProps = {
