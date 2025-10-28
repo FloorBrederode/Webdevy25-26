@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
@@ -21,6 +22,11 @@ function App() {
         <button onClick={() => setCount((count) => count + 1)}>
           count is {count}
         </button>
+
+        <Link to="/calendar">
+          <button>Go to Calendar</button>
+        </Link>
+
         <p>
           Edit <code>src/App.tsx</code> and save to test HMR
         </p>
