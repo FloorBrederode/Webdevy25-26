@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import "./Calendar.css"; // importeer onze CSS-styling
 
 // Type-definitie voor een dag in de kalender
@@ -95,7 +96,9 @@ const CalendarApp: React.FC = () => {
           <button className="nav-item">Teams</button>
           <button className="nav-item">Rooms</button>
           <button className="nav-item">Tasks</button>
-          <button className="nav-item">Settings</button>
+          <Link className="nav-item" to="/admin">
+            Settings
+          </Link>
         </nav>
       </aside>
 

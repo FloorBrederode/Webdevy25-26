@@ -5,6 +5,7 @@ import App from './App'
 import Calendar from './Calender/Calender'
 import Login from './Login/Login'
 import CreateAccount from './Login/CreateAccount'
+import AdminDashboard from './Admin/Admin'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -21,6 +22,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 
         {/* Full-page calendar route */}
         <Route path="/calendar" element={<Calendar />} />
+
+        {/* Admin */}
+        <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
