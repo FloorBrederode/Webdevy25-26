@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { canLogin, type LoginErrors } from './auth';
 import './Login.css';
 
@@ -114,6 +114,11 @@ export default function Login({ onSuccess }: LoginProps): React.ReactElement {
 
         <div className="actions">
           <button className="btn primary" type="submit">Sign in</button>
+        </div>
+
+        <div className="account-footer">
+          <span className="muted">New here?</span>
+          <Link className="link" to="/register">Create an account</Link>
         </div>
       </form>
     </section>

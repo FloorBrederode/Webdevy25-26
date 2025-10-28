@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import App from './App'
 import Calendar from './Calender/Calender'
 import Login from './Login/Login'
+import CreateAccount from './Login/CreateAccount'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -12,8 +13,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         {/* Home route */}
         <Route path="/" element={<App />} />
 
-        {/* Full-page calendar route */}
+        {/* Login */}
         <Route path="/login" element={<Login />} />
+
+        {/* Create account */}
+        <Route path="/register" element={<CreateAccount />} />
 
         {/* Full-page calendar route */}
         <Route path="/calendar" element={<Calendar />} />
