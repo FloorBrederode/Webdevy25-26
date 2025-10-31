@@ -100,16 +100,9 @@ export default function Login({ onSuccess }: LoginProps): React.ReactElement {
             {' '}
             Remember me
           </label>
-          <a
-            className="link"
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              // TODO: "forgot password"
-            }}
-          >
+          <Link className="link" to="/forgot-password">
             Forgot password?
-          </a>
+          </Link>
         </div>
 
         <div className="actions">
