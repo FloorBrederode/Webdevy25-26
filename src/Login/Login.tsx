@@ -12,7 +12,7 @@ export default function Login({ onSuccess }: LoginProps): React.ReactElement {
   const [password, setPassword] = useState<string>('');
   const [remember, setRemember] = useState<boolean>(false);
   const [showPass, setShowPass] = useState<boolean>(false);
-  const [errors, setErrors] = useState<LoginErrors>({ email: false, password: false });
+  const [errors, setErrors] = useState<LoginErrors>({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -52,13 +52,22 @@ export default function Login({ onSuccess }: LoginProps): React.ReactElement {
               id="email"
               name="email"
               value={email}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                setEmail(e.target.value);
+                setErrors((prev) => {
+                  if (!prev.email && !prev.auth) return prev;
+                  const next = { ...prev };
+                  delete next.email;
+                  delete next.auth;
+                  return next;
+                });
+              }}
               placeholder="you@company.com"
               required
             />
           </div>
           <div className={`error ${errors.email ? 'show' : ''}`} id="emailError" role="alert">
-            Please enter a valid email.
+            {errors.email ?? ''}
           </div>
         </div>
 
@@ -71,7 +80,16 @@ export default function Login({ onSuccess }: LoginProps): React.ReactElement {
               name="password"
               placeholder="Password"
               value={password}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                setPassword(e.target.value);
+                setErrors((prev) => {
+                  if (!prev.password && !prev.auth) return prev;
+                  const next = { ...prev };
+                  delete next.password;
+                  delete next.auth;
+                  return next;
+                });
+              }}
               required
               minLength={6}
             />
@@ -85,9 +103,15 @@ export default function Login({ onSuccess }: LoginProps): React.ReactElement {
             </button>
           </div>
           <div className={`error ${errors.password ? 'show' : ''}`} id="passError" role="alert">
-            Password must be at least 6 characters.
+            {errors.password ?? ''}
           </div>
         </div>
+
+        {errors.auth && (
+          <div className="error show" id="authError" role="alert">
+            {errors.auth}
+          </div>
+        )}
 
         <div className="row">
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
