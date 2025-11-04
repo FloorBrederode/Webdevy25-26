@@ -1,4 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WebDev.Core.Models;
 
 namespace WebDev.Infrastructure.Data;
@@ -44,9 +50,26 @@ public class WebDevDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).HasMaxLength(200).IsRequired();
             entity.Property(e => e.Location).HasMaxLength(200).IsRequired();
-            entity.Property(e => e.Attendees).IsRequired();
             entity.Property(e => e.Description).HasMaxLength(1000);
             entity.Property(e => e.Organizer).HasMaxLength(150);
+
+            var guidListConverter = new ValueConverter<List<Guid>, string>(
+                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                v => string.IsNullOrWhiteSpace(v)
+                    ? new List<Guid>()
+                    : JsonSerializer.Deserialize<List<Guid>>(v, (JsonSerializerOptions?)null) ?? new List<Guid>());
+
+            var guidListComparer = new ValueComparer<List<Guid>>(
+                (l1, l2) =>
+                    (l1 ?? new List<Guid>()).SequenceEqual(l2 ?? new List<Guid>()),
+                l => (l ?? new List<Guid>()).Aggregate(0, (hash, guid) => HashCode.Combine(hash, guid.GetHashCode())),
+                l => (l ?? new List<Guid>()).ToList());
+
+            entity.Property(e => e.Attendees)
+                .HasColumnType("nvarchar(max)")
+                .HasConversion(guidListConverter);
+
+            entity.Property(e => e.Attendees).Metadata.SetValueComparer(guidListComparer);
         });
 
         builder.Entity<Team>(entity =>
