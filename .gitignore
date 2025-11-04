@@ -38,3 +38,4 @@ backend/obj/Debug/net9.0/rjsmcshtml.dswa.cache.json
 backend/bin/Debug/net9.0/webdev.pdb
 backend/bin/Debug/net9.0/webdev.dll
 .gitignore
+backend/obj/Debug/net9.0/software-construction.AssemblyInfoInputs.cache
