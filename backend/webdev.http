@@ -1,0 +1,6 @@
+@WebDev_HostAddress = http://localhost:8000
+
+GET {{WebDev_HostAddress}}/api/
+Accept: application/json
+
+###
