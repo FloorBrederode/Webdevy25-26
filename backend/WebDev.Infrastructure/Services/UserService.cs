@@ -6,6 +6,7 @@ using System.Threading;
 using Microsoft.AspNetCore.Identity;
 using WebDev.Core.DTOs;
 using WebDev.Core.Interfaces;
+using WebDev.Core.Models;
 
 namespace WebDev.Infrastructure.Services;
 
@@ -58,13 +59,15 @@ public sealed class UserService : IUserService
                 return (false, new[] { "Email is already registered." });
             }
 
+            var role = request.Role ?? UserRole.Member;
+
             var user = new InMemoryUser
             {
                 Id = Guid.NewGuid().ToString("N"),
                 Email = normalizedEmail,
                 FirstName = request.FirstName.Trim(),
                 LastName = request.LastName.Trim(),
-                Role = string.IsNullOrWhiteSpace(request.Role) ? "User" : request.Role.Trim()
+                Role = role
             };
 
             user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
@@ -93,7 +96,7 @@ public sealed class UserService : IUserService
             Email = NormalizeEmail("demo@company.com"),
             FirstName = "Demo",
             LastName = "User",
-            Role = "User"
+            Role = UserRole.Member
         };
         demoUser.PasswordHash = passwordHasher.HashPassword(demoUser, "123456");
         users.TryAdd(demoUser.Email, demoUser);
@@ -104,7 +107,7 @@ public sealed class UserService : IUserService
             Email = NormalizeEmail("admin@company.com"),
             FirstName = "Admin",
             LastName = "User",
-            Role = "Admin"
+            Role = UserRole.Admin
         };
         adminUser.PasswordHash = passwordHasher.HashPassword(adminUser, "password123");
         users.TryAdd(adminUser.Email, adminUser);
@@ -139,7 +142,7 @@ public sealed class UserService : IUserService
         public required string Email { get; init; }
         public required string FirstName { get; set; }
         public required string LastName { get; set; }
-        public required string Role { get; set; }
+        public required UserRole Role { get; set; }
         public string PasswordHash { get; set; } = string.Empty;
     }
 }

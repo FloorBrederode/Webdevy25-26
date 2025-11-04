@@ -46,7 +46,7 @@ public sealed class AuthController : ControllerBase
         {
             ID = user.Id,
             Username = displayName,
-            Role = user.Role ?? "User",
+            Role = user.Role,
             Token = token,
             ExpiresAt = expiresAt
         });
@@ -102,7 +102,7 @@ public sealed class AuthController : ControllerBase
             FirstName = user.FirstName ?? request.FirstName,
             LastName = user.LastName ?? request.LastName,
             DisplayName = displayName,
-            Role = user.Role ?? "User",
+            Role = user.Role,
             Token = token,
             ExpiresAt = expiresAt
         });

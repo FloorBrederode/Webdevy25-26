@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using WebDev.Core.DTOs;
 using WebDev.Core.Interfaces;
 using WebDev.API.Configuration;
+using WebDev.Core.Models;
 
 namespace WebDev.Infrastructure.Services;
 
@@ -33,10 +34,7 @@ public sealed class JwtTokenGenerator : IJwtTokenGenerator
             new(ClaimTypes.NameIdentifier, user.Id)
         };
 
-        if (!string.IsNullOrWhiteSpace(user.Role))
-        {
-            claims.Add(new Claim(ClaimTypes.Role, user.Role));
-        }
+        claims.Add(new Claim(ClaimTypes.Role, user.Role.ToString()));
 
         var token = new JwtSecurityToken(
             issuer: _options.Issuer,

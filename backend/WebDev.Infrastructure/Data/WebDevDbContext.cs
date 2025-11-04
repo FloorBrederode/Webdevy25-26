@@ -33,7 +33,10 @@ public class WebDevDbContext : DbContext
             entity.Property(e => e.FirstName).HasMaxLength(100).IsRequired();
             entity.Property(e => e.LastName).HasMaxLength(100).IsRequired();
             entity.Property(e => e.JobTitle).HasMaxLength(150);
-            entity.Property(e => e.Role).HasMaxLength(50);
+            entity.Property(e => e.Role)
+                .HasConversion<string>()
+                .HasMaxLength(50)
+                .HasDefaultValue(UserRole.Member);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
         });
 
@@ -41,8 +44,25 @@ public class WebDevDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).HasMaxLength(150).IsRequired();
-            entity.Property(e => e.OpeningTimes).HasMaxLength(200);
             entity.Property(e => e.Capacity).IsRequired();
+
+            var roomOpeningConverter = new ValueConverter<List<RoomOpeningSlot>, string>(
+                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                v => string.IsNullOrWhiteSpace(v)
+                    ? new List<RoomOpeningSlot>()
+                    : JsonSerializer.Deserialize<List<RoomOpeningSlot>>(v, (JsonSerializerOptions?)null) ?? new List<RoomOpeningSlot>());
+
+            var roomOpeningComparer = new ValueComparer<List<RoomOpeningSlot>>(
+                (l1, l2) =>
+                    (l1 ?? new List<RoomOpeningSlot>()).SequenceEqual(l2 ?? new List<RoomOpeningSlot>()),
+                l => (l ?? new List<RoomOpeningSlot>()).Aggregate(0, (hash, slot) => HashCode.Combine(hash, slot.GetHashCode())),
+                l => (l ?? new List<RoomOpeningSlot>()).Select(slot => slot.Clone()).ToList());
+
+            entity.Property(e => e.OpeningTimes)
+                .HasColumnType("nvarchar(max)")
+                .HasConversion(roomOpeningConverter);
+
+            entity.Property(e => e.OpeningTimes).Metadata.SetValueComparer(roomOpeningComparer);
         });
 
         builder.Entity<Event>(entity =>
@@ -76,7 +96,24 @@ public class WebDevDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).HasMaxLength(150).IsRequired();
-            entity.Property(e => e.Members).IsRequired();
+
+            var teamGuidListConverter = new ValueConverter<List<Guid>, string>(
+                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                v => string.IsNullOrWhiteSpace(v)
+                    ? new List<Guid>()
+                    : JsonSerializer.Deserialize<List<Guid>>(v, (JsonSerializerOptions?)null) ?? new List<Guid>());
+
+            var teamGuidListComparer = new ValueComparer<List<Guid>>(
+                (l1, l2) =>
+                    (l1 ?? new List<Guid>()).SequenceEqual(l2 ?? new List<Guid>()),
+                l => (l ?? new List<Guid>()).Aggregate(0, (hash, guid) => HashCode.Combine(hash, guid.GetHashCode())),
+                l => (l ?? new List<Guid>()).ToList());
+
+            entity.Property(e => e.Members)
+                .HasColumnType("nvarchar(max)")
+                .HasConversion(teamGuidListConverter);
+
+            entity.Property(e => e.Members).Metadata.SetValueComparer(teamGuidListComparer);
         });
 
         builder.Entity<Booking>(entity =>

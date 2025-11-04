@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -39,7 +40,11 @@ static void ConfigureServices(IServiceCollection services, ConfigurationManager 
     ConfigureAuthentication(services, configuration);
 
     services.AddAuthorization();
-    services.AddControllers();
+    services.AddControllers()
+            .AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+            });
 
     // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
     services.AddOpenApi();
