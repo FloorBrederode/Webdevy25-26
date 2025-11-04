@@ -83,7 +83,24 @@ public class WebDevDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Location).HasMaxLength(200).IsRequired();
-            entity.Property(e => e.Attendees).IsRequired();
+
+            var bookingGuidListConverter = new ValueConverter<List<Guid>, string>(
+                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                v => string.IsNullOrWhiteSpace(v)
+                    ? new List<Guid>()
+                    : JsonSerializer.Deserialize<List<Guid>>(v, (JsonSerializerOptions?)null) ?? new List<Guid>());
+
+            var bookingGuidListComparer = new ValueComparer<List<Guid>>(
+                (l1, l2) =>
+                    (l1 ?? new List<Guid>()).SequenceEqual(l2 ?? new List<Guid>()),
+                l => (l ?? new List<Guid>()).Aggregate(0, (hash, guid) => HashCode.Combine(hash, guid.GetHashCode())),
+                l => (l ?? new List<Guid>()).ToList());
+
+            entity.Property(e => e.Attendees)
+                .HasColumnType("nvarchar(max)")
+                .HasConversion(bookingGuidListConverter);
+
+            entity.Property(e => e.Attendees).Metadata.SetValueComparer(bookingGuidListComparer);
         });
     }
 }
