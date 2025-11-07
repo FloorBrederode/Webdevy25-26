@@ -5,12 +5,13 @@ namespace WebDev.Core.Models;
 
 public sealed class Event
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public int Id { get; set; }
     public required string Name { get; set; }
-    public required string Location { get; set; }
-    public List<Guid> Attendees { get; set; } = new();
     public string? Description { get; set; }
     public DateTime StartTime { get; set; }
-    public TimeSpan Duration { get; set; }
-    public string? Organizer { get; set; }
+    public DateTime EndTime { get; set; }
+    public int? OrganizerId { get; set; }
+    public User? Organizer { get; set; }
+    public List<int> AttendeeIds { get; set; } = new();
+    public List<int> RoomIds { get; set; } = new();
 }

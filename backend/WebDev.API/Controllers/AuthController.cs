@@ -45,7 +45,7 @@ public sealed class AuthController : ControllerBase
         return Ok(new LoginResponseDto
         {
             ID = user.Id,
-            Username = displayName,
+            Name = displayName,
             Role = user.Role,
             Token = token,
             ExpiresAt = expiresAt
@@ -99,9 +99,10 @@ public sealed class AuthController : ControllerBase
         {
             ID = user.Id,
             Email = user.Email,
-            FirstName = user.FirstName ?? request.FirstName,
-            LastName = user.LastName ?? request.LastName,
-            DisplayName = displayName,
+            Name = displayName,
+            PhoneNumber = user.PhoneNumber ?? request.PhoneNumber,
+            JobTitle = user.JobTitle ?? request.JobTitle,
+            CompanyId = user.CompanyId ?? request.CompanyId,
             Role = user.Role,
             Token = token,
             ExpiresAt = expiresAt
@@ -113,37 +114,16 @@ public sealed class AuthController : ControllerBase
 
     private static string ResolveDisplayName(UserDto user, RegisterRequestDto? request = null)
     {
-        if (!string.IsNullOrWhiteSpace(user.DisplayName))
+        if (!string.IsNullOrWhiteSpace(user.Name))
         {
-            return user.DisplayName!;
+            return user.Name;
         }
 
-        var nameParts = new List<string>();
-
-        if (!string.IsNullOrWhiteSpace(user.FirstName))
+        if (!string.IsNullOrWhiteSpace(request?.Name))
         {
-            nameParts.Add(user.FirstName!);
+            return request!.Name;
         }
 
-        if (!string.IsNullOrWhiteSpace(user.LastName))
-        {
-            nameParts.Add(user.LastName!);
-        }
-
-        if (nameParts.Count == 0 && request is not null)
-        {
-            if (!string.IsNullOrWhiteSpace(request.FirstName))
-            {
-                nameParts.Add(request.FirstName);
-            }
-
-            if (!string.IsNullOrWhiteSpace(request.LastName))
-            {
-                nameParts.Add(request.LastName);
-            }
-        }
-
-        var displayName = string.Join(' ', nameParts.Where(part => !string.IsNullOrWhiteSpace(part))).Trim();
-        return string.IsNullOrWhiteSpace(displayName) ? user.Email : displayName;
+        return user.Email;
     }
 }

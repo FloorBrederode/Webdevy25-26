@@ -2,19 +2,20 @@ namespace WebDev.Core.Models;
 
 public enum UserRole
 {
-    Member = 0,
-    Admin = 1,
-    Manager = 2
+    Staff = 0,
+    Manager = 1,
+    Admin = 2
 }
 
-
-public class User
+public sealed class User
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public int Id { get; set; }
+    public required string Name { get; set; }
     public required string Email { get; set; }
-    public required string FirstName { get; set; }
-    public required string LastName { get; set; }
+    public string? PhoneNumber { get; set; }
+    public required string PasswordHash { get; set; }
     public string? JobTitle { get; set; }
-    public UserRole Role { get; set; } = UserRole.Member;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public UserRole Role { get; set; } = UserRole.Staff;
+    public int? CompanyId { get; set; }
+    public Company? Company { get; set; }
 }

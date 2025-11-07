@@ -7,34 +7,30 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Dependencies / build outputs
+node_modules/
+dist/
+dist-ssr/
 *.local
+**/bin/
+**/obj/
+*.dll
+*.pdb
+
+# Database / generated assets
+Database/*.db
+Database/generated_passwords.csv
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
 *.sw?
-backend/obj/Debug/net9.0/refint/webdev.dll
-backend/obj/Debug/net9.0/ref/webdev.dll
 
-backend/obj/Debug/net9.0/webdev.sourcelink.json
-backend/obj/Debug/net9.0/webdev.pdb
-backend/obj/Debug/net9.0/webdev.dll
-backend/obj/Debug/net9.0/webdev.csproj.CoreCompileInputs.cache
-backend/obj/Debug/net9.0/webdev.AssemblyInfoInputs.cache
-backend/obj/Debug/net9.0/webdev.AssemblyInfo.cs
-backend/obj/Debug/net9.0/software-construction.AssemblyInfoInputs.cache
-backend/obj/Debug/net9.0/software-construction.AssemblyInfo.cs
-backend/obj/Debug/net9.0/rjsmrazor.dswa.cache.json
-backend/obj/Debug/net9.0/rjsmcshtml.dswa.cache.json
-backend/bin/Debug/net9.0/webdev.pdb
-backend/bin/Debug/net9.0/webdev.dll
-backend/obj/Debug/net9.0/software-construction.AssemblyInfoInputs.cache
+# Misc tooling
+*.lock.json
+*.cache

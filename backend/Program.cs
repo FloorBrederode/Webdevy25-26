@@ -1,18 +1,21 @@
+using System.IO;
 using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using WebDev.API.Configuration;
 using WebDev.Core.Interfaces;
+using WebDev.Infrastructure.Data;
 using WebDev.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 ConfigureConfiguration(builder.Configuration, builder.Environment);
-ConfigureServices(builder.Services, builder.Configuration);
+ConfigureServices(builder.Services, builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 
@@ -30,12 +33,15 @@ static void ConfigureConfiguration(ConfigurationManager configuration, IHostEnvi
     }
 }
 
-static void ConfigureServices(IServiceCollection services, ConfigurationManager configuration)
+static void ConfigureServices(IServiceCollection services, ConfigurationManager configuration, IHostEnvironment environment)
 {
     services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
 
-    services.AddSingleton<IUserService, UserService>();
-    services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
+    var connectionString = ResolveConnectionString(configuration, environment);
+    services.AddDbContext<WebDevDbContext>(options => options.UseSqlite(connectionString));
+
+    services.AddScoped<IUserService, UserService>();
+    services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 
     ConfigureAuthentication(services, configuration);
 
@@ -48,6 +54,21 @@ static void ConfigureServices(IServiceCollection services, ConfigurationManager 
 
     // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
     services.AddOpenApi();
+}
+
+static string ResolveConnectionString(ConfigurationManager configuration, IHostEnvironment environment)
+{
+    var configuredConnection = configuration.GetConnectionString("DefaultConnection");
+    if (!string.IsNullOrWhiteSpace(configuredConnection))
+    {
+        return configuredConnection.Replace(
+            "{ContentRoot}",
+            environment.ContentRootPath,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    var databasePath = Path.GetFullPath(Path.Combine(environment.ContentRootPath, "..", "Database", "database.db"));
+    return $"Data Source={databasePath}";
 }
 
 static void ConfigureAuthentication(IServiceCollection services, ConfigurationManager configuration)

@@ -1,11 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "lM0CLbSFc5s=",
+  "dgSpecHash": "ImhxMMN/pY4=",
   "success": true,
   "projectFilePath": "/Users/davidterborgh/Documents/workspace/Semester 3/WebDev/Webdevy25-26/backend/webdev.csproj",
   "expectedPackageFiles": [
     "/Users/davidterborgh/.nuget/packages/azure.core/1.38.0/azure.core.1.38.0.nupkg.sha512",
     "/Users/davidterborgh/.nuget/packages/azure.identity/1.11.4/azure.identity.1.11.4.nupkg.sha512",
+    "/Users/davidterborgh/.nuget/packages/bcrypt.net-next/4.0.3/bcrypt.net-next.4.0.3.nupkg.sha512",
     "/Users/davidterborgh/.nuget/packages/humanizer.core/2.14.1/humanizer.core.2.14.1.nupkg.sha512",
     "/Users/davidterborgh/.nuget/packages/microsoft.aspnetcore.authentication.jwtbearer/9.0.10/microsoft.aspnetcore.authentication.jwtbearer.9.0.10.nupkg.sha512",
     "/Users/davidterborgh/.nuget/packages/microsoft.aspnetcore.cryptography.internal/9.0.10/microsoft.aspnetcore.cryptography.internal.9.0.10.nupkg.sha512",
@@ -23,12 +24,15 @@
     "/Users/davidterborgh/.nuget/packages/microsoft.codeanalysis.workspaces.msbuild/4.8.0/microsoft.codeanalysis.workspaces.msbuild.4.8.0.nupkg.sha512",
     "/Users/davidterborgh/.nuget/packages/microsoft.data.sqlclient/5.1.6/microsoft.data.sqlclient.5.1.6.nupkg.sha512",
     "/Users/davidterborgh/.nuget/packages/microsoft.data.sqlclient.sni.runtime/5.1.1/microsoft.data.sqlclient.sni.runtime.5.1.1.nupkg.sha512",
+    "/Users/davidterborgh/.nuget/packages/microsoft.data.sqlite.core/9.0.10/microsoft.data.sqlite.core.9.0.10.nupkg.sha512",
     "/Users/davidterborgh/.nuget/packages/microsoft.entityframeworkcore/9.0.10/microsoft.entityframeworkcore.9.0.10.nupkg.sha512",
     "/Users/davidterborgh/.nuget/packages/microsoft.entityframeworkcore.abstractions/9.0.10/microsoft.entityframeworkcore.abstractions.9.0.10.nupkg.sha512",
     "/Users/davidterborgh/.nuget/packages/microsoft.entityframeworkcore.analyzers/9.0.10/microsoft.entityframeworkcore.analyzers.9.0.10.nupkg.sha512",
     "/Users/davidterborgh/.nuget/packages/microsoft.entityframeworkcore.design/9.0.10/microsoft.entityframeworkcore.design.9.0.10.nupkg.sha512",
     "/Users/davidterborgh/.nuget/packages/microsoft.entityframeworkcore.inmemory/9.0.10/microsoft.entityframeworkcore.inmemory.9.0.10.nupkg.sha512",
     "/Users/davidterborgh/.nuget/packages/microsoft.entityframeworkcore.relational/9.0.10/microsoft.entityframeworkcore.relational.9.0.10.nupkg.sha512",
+    "/Users/davidterborgh/.nuget/packages/microsoft.entityframeworkcore.sqlite/9.0.10/microsoft.entityframeworkcore.sqlite.9.0.10.nupkg.sha512",
+    "/Users/davidterborgh/.nuget/packages/microsoft.entityframeworkcore.sqlite.core/9.0.10/microsoft.entityframeworkcore.sqlite.core.9.0.10.nupkg.sha512",
     "/Users/davidterborgh/.nuget/packages/microsoft.entityframeworkcore.sqlserver/9.0.10/microsoft.entityframeworkcore.sqlserver.9.0.10.nupkg.sha512",
     "/Users/davidterborgh/.nuget/packages/microsoft.extensions.apidescription.server/9.0.0/microsoft.extensions.apidescription.server.9.0.0.nupkg.sha512",
     "/Users/davidterborgh/.nuget/packages/microsoft.extensions.caching.abstractions/9.0.10/microsoft.extensions.caching.abstractions.9.0.10.nupkg.sha512",
@@ -55,6 +59,10 @@
     "/Users/davidterborgh/.nuget/packages/microsoft.sqlserver.server/1.0.0/microsoft.sqlserver.server.1.0.0.nupkg.sha512",
     "/Users/davidterborgh/.nuget/packages/microsoft.win32.systemevents/6.0.0/microsoft.win32.systemevents.6.0.0.nupkg.sha512",
     "/Users/davidterborgh/.nuget/packages/mono.texttemplating/3.0.0/mono.texttemplating.3.0.0.nupkg.sha512",
+    "/Users/davidterborgh/.nuget/packages/sqlitepclraw.bundle_e_sqlite3/2.1.10/sqlitepclraw.bundle_e_sqlite3.2.1.10.nupkg.sha512",
+    "/Users/davidterborgh/.nuget/packages/sqlitepclraw.core/2.1.10/sqlitepclraw.core.2.1.10.nupkg.sha512",
+    "/Users/davidterborgh/.nuget/packages/sqlitepclraw.lib.e_sqlite3/2.1.10/sqlitepclraw.lib.e_sqlite3.2.1.10.nupkg.sha512",
+    "/Users/davidterborgh/.nuget/packages/sqlitepclraw.provider.e_sqlite3/2.1.10/sqlitepclraw.provider.e_sqlite3.2.1.10.nupkg.sha512",
     "/Users/davidterborgh/.nuget/packages/swashbuckle.aspnetcore/9.0.6/swashbuckle.aspnetcore.9.0.6.nupkg.sha512",
     "/Users/davidterborgh/.nuget/packages/swashbuckle.aspnetcore.swagger/9.0.6/swashbuckle.aspnetcore.swagger.9.0.6.nupkg.sha512",
     "/Users/davidterborgh/.nuget/packages/swashbuckle.aspnetcore.swaggergen/9.0.6/swashbuckle.aspnetcore.swaggergen.9.0.6.nupkg.sha512",
@@ -92,15 +100,5 @@
     "/Users/davidterborgh/.nuget/packages/system.threading.tasks.extensions/4.5.4/system.threading.tasks.extensions.4.5.4.nupkg.sha512",
     "/Users/davidterborgh/.nuget/packages/system.windows.extensions/6.0.0/system.windows.extensions.6.0.0.nupkg.sha512"
   ],
-  "logs": [
-    {
-      "code": "NU1900",
-      "level": "Warning",
-      "message": "Error occurred while getting package vulnerability data: Unable to load the service index for source https://api.nuget.org/v3/index.json.",
-      "projectPath": "/Users/davidterborgh/Documents/workspace/Semester 3/WebDev/Webdevy25-26/backend/webdev.csproj",
-      "warningLevel": 1,
-      "filePath": "/Users/davidterborgh/Documents/workspace/Semester 3/WebDev/Webdevy25-26/backend/webdev.csproj",
-      "targetGraphs": []
-    }
-  ]
+  "logs": []
 }
