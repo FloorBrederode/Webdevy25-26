@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using WebDev.Core.DTOs;
 using WebDev.Core.Interfaces;
 
 namespace WebDev.API.Controllers;
@@ -17,32 +18,37 @@ public sealed class RoomsController : ControllerBase
         _availabilityService = availabilityService;
     }
 
-    [HttpGet("{roomId:int}/availability")]
+    [HttpPost("{roomId:int}/availability")]
     [AllowAnonymous]
-    public async Task<IActionResult> GetAvailability(int roomId, [FromQuery] DateTime startTime, [FromQuery] DateTime endTime)
+    public async Task<IActionResult> GetAvailability(int roomId, [FromBody] RoomAvailabilityRequestDto request)
     {
         if (roomId <= 0)
         {
             return BadRequest("Room id must be positive.");
         }
 
-        if (startTime == default || endTime == default)
+        if (request is null)
         {
-            return BadRequest("StartTime and EndTime query parameters are required.");
+            return BadRequest("Request body is required.");
         }
 
-        if (startTime >= endTime)
+        if (request.StartTime == default || request.EndTime == default)
+        {
+            return BadRequest("StartTime and EndTime must be provided.");
+        }
+
+        if (request.StartTime >= request.EndTime)
         {
             return BadRequest("StartTime must be earlier than EndTime.");
         }
 
-        var available = await _availabilityService.IsRoomAvailableAsync(roomId, startTime, endTime);
+        var available = await _availabilityService.IsRoomAvailableAsync(roomId, request.StartTime, request.EndTime);
 
         return Ok(new
         {
             RoomId = roomId,
-            StartTime = startTime,
-            EndTime = endTime,
+            StartTime = request.StartTime,
+            EndTime = request.EndTime,
             Available = available
         });
     }
