@@ -42,6 +42,7 @@ static void ConfigureServices(IServiceCollection services, ConfigurationManager 
 
     services.AddScoped<IUserService, UserService>();
     services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+    services.AddScoped<IRoomAvailabilityService, RoomAvailabilityService>();
 
     ConfigureAuthentication(services, configuration);
 
