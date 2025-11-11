@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WebDev.Core.DTOs;
 using WebDev.Core.Interfaces;
+using WebDev.Core.Models;
 
 namespace WebDev.API.Controllers;
 
@@ -11,11 +12,32 @@ namespace WebDev.API.Controllers;
 [Route("api/[controller]")]
 public sealed class RoomsController : ControllerBase
 {
+    public readonly IRepository<Room> _repository;
     private readonly IRoomAvailabilityService _availabilityService;
-
-    public RoomsController(IRoomAvailabilityService availabilityService)
+    public RoomsController(IRepository<Room> repository, IRoomAvailabilityService availabilityService)
     {
+        _repository = repository;
         _availabilityService = availabilityService;
+    }
+
+    [HttpGet("all")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetAllRooms()
+    {
+        var rooms = _repository.GetAll();
+        return Ok(rooms);
+    }
+
+    [HttpGet("{roomId:int}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetRoomById(int roomId)
+    {
+        var room = _repository.FindById(roomId);
+        if (room is null)
+        {
+            return NotFound();
+        }
+        return Ok(room);
     }
 
     [HttpPost("{roomId:int}/availability")]

@@ -5462,19 +5462,19 @@
     ]
   },
   "packageFolders": {
-    "/Users/davidterborgh/.nuget/packages/": {}
+    "C:\\Users\\brede\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/Users/davidterborgh/Documents/workspace/Semester 3/WebDev/Webdevy25-26/backend/webdev.csproj",
+      "projectUniqueName": "C:\\Users\\brede\\Documents\\GitHub\\Webdevy25-26\\backend\\webdev.csproj",
       "projectName": "webdev",
-      "projectPath": "/Users/davidterborgh/Documents/workspace/Semester 3/WebDev/Webdevy25-26/backend/webdev.csproj",
-      "packagesPath": "/Users/davidterborgh/.nuget/packages/",
-      "outputPath": "/Users/davidterborgh/Documents/workspace/Semester 3/WebDev/Webdevy25-26/backend/obj/",
+      "projectPath": "C:\\Users\\brede\\Documents\\GitHub\\Webdevy25-26\\backend\\webdev.csproj",
+      "packagesPath": "C:\\Users\\brede\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\brede\\Documents\\GitHub\\Webdevy25-26\\backend\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "/Users/davidterborgh/.nuget/NuGet/NuGet.Config"
+        "C:\\Users\\brede\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net9.0"
@@ -5496,9 +5496,9 @@
       "restoreAuditProperties": {
         "enableAudit": "true",
         "auditLevel": "low",
-        "auditMode": "direct"
+        "auditMode": "all"
       },
-      "SdkAnalysisLevel": "9.0.300"
+      "SdkAnalysisLevel": "9.0.100"
     },
     "frameworks": {
       "net9.0": {
@@ -5574,7 +5574,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/9.0.306/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.100/PortableRuntimeIdentifierGraph.json"
       }
     }
   }
