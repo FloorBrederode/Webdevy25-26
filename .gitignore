@@ -34,3 +34,6 @@ Database/generated_passwords.csv
 # Misc tooling
 *.lock.json
 *.cache
+
+# ignore stupid hash files
+obj/
