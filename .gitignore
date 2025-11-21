@@ -37,3 +37,4 @@ Database/generated_passwords.csv
 
 # ignore stupid hash files
 obj/
+backend/obj/
