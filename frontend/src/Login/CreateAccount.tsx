@@ -13,6 +13,7 @@ type FormState = {
   firstName: string;
   lastName: string;
   email: string;
+  phoneNumber: string;
   password: string;
   confirmPassword: string;
 };
@@ -21,6 +22,7 @@ type ErrorState = {
   firstName: string;
   lastName: string;
   email: string;
+  phoneNumber: string;
   password: string;
   confirmPassword: string;
   form: string;
@@ -30,6 +32,7 @@ const defaultState: FormState = {
   firstName: '',
   lastName: '',
   email: '',
+  phoneNumber: '',
   password: '',
   confirmPassword: '',
 };
@@ -38,6 +41,7 @@ const defaultErrors: ErrorState = {
   firstName: '',
   lastName: '',
   email: '',
+  phoneNumber: '',
   password: '',
   confirmPassword: '',
   form: '',
@@ -64,11 +68,20 @@ export default function CreateAccount(): React.ReactElement {
     const trimmedFirst = form.firstName.trim();
     const trimmedLast = form.lastName.trim();
     const trimmedEmail = form.email.trim();
+    const trimmedPhone = form.phoneNumber.trim();
+    const phoneDigits = trimmedPhone.replace(/[^\d]/g, '');
+    const phoneHasOnlyAllowedChars = trimmedPhone === '' || /^\+?[\d\s().-]+$/.test(trimmedPhone);
+    const phoneValid = trimmedPhone === '' || (
+      phoneHasOnlyAllowedChars &&
+      phoneDigits.length >= 8 &&
+      phoneDigits.length <= 15
+    );
 
     const nextErrors: ErrorState = {
       firstName: trimmedFirst ? '' : 'Please enter your first name.',
       lastName: trimmedLast ? '' : 'Please enter your last name.',
       email: validateEmail(trimmedEmail) ? '' : 'Please enter a valid email.',
+      phoneNumber: phoneValid ? '' : 'Please enter a valid phone number.',
       password: form.password.length >= 6 ? '' : 'Password must be at least 6 characters.',
       confirmPassword:
         form.confirmPassword === form.password ? '' : 'Passwords do not match.',
@@ -91,9 +104,13 @@ export default function CreateAccount(): React.ReactElement {
     setErrors((prev) => ({ ...prev, form: '' }));
 
     const name = `${form.firstName.trim()} ${form.lastName.trim()}`.replace(/\s+/g, ' ');
+    const normalizedPhone = form.phoneNumber.trim()
+      ? `${form.phoneNumber.trim().startsWith('+') ? '+' : ''}${form.phoneNumber.replace(/[^\d]/g, '')}`
+      : undefined;
     const payload = {
       name: name.trim(),
       email: form.email.trim(),
+      phoneNumber: normalizedPhone,
       password: form.password
     };
 
@@ -184,6 +201,22 @@ export default function CreateAccount(): React.ReactElement {
             />
           </div>
           {errors.email && <div className="error show">{errors.email}</div>}
+        </div>
+
+        <div className="field">
+          <label htmlFor="phoneNumber">Phone number (optional)</label>
+          <div className="input-wrap">
+            <input
+              type="tel"
+              id="phoneNumber"
+              name="phoneNumber"
+              autoComplete="tel"
+              placeholder="+1 555 123 4567"
+              value={form.phoneNumber}
+              onChange={handleChange('phoneNumber')}
+            />
+          </div>
+          {errors.phoneNumber && <div className="error show">{errors.phoneNumber}</div>}
         </div>
 
         <div className="field">
