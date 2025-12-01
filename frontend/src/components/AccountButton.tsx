@@ -110,7 +110,7 @@ export function AccountButton({ onLogout }: AccountButtonProps): React.ReactElem
   const displayName = formatDisplayName(session);
   const displayEmail = session?.email;
 
-  const authPaths = ['/login', '/register', '/forgot-password', '/'];
+  const authPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/'];
   if (authPaths.includes(location.pathname)) return null;
 
   if (!session) {

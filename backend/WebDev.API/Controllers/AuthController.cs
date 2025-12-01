@@ -5,8 +5,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using WebDev.Core.DTOs;
 using WebDev.Core.Interfaces;
+using WebDev.API.Configuration;
 
 namespace WebDev.API.Controllers;
 
@@ -18,6 +20,7 @@ public sealed class AuthController : ControllerBase
     private readonly IJwtTokenGenerator _tokenGenerator;
     private readonly IPasswordResetStore _passwordResetStore;
     private readonly IEmailSender _emailSender;
+    private readonly FrontendOptions _frontendOptions;
     private readonly ILogger<AuthController> _logger;
 
     public AuthController(
@@ -25,12 +28,14 @@ public sealed class AuthController : ControllerBase
         IJwtTokenGenerator tokenGenerator,
         IPasswordResetStore passwordResetStore,
         IEmailSender emailSender,
+        IOptions<FrontendOptions> frontendOptions,
         ILogger<AuthController> logger)
     {
         _userService = userService;
         _tokenGenerator = tokenGenerator;
         _passwordResetStore = passwordResetStore;
         _emailSender = emailSender;
+        _frontendOptions = frontendOptions.Value;
         _logger = logger;
     }
 
@@ -77,7 +82,7 @@ public sealed class AuthController : ControllerBase
         if (user is not null)
         {
             var token = _passwordResetStore.CreateToken(user.Id, TimeSpan.FromMinutes(30));
-            var resetLink = $"{Request.Scheme}://{Request.Host}/reset-password?token={Uri.EscapeDataString(token)}";
+            var resetLink = BuildResetLink(token);
             await SendResetEmailAsync(user.Email, resetLink);
         }
 
@@ -167,6 +172,15 @@ public sealed class AuthController : ControllerBase
     
     private static bool IsConflictError(string error) =>
         string.Equals(error, "Email is already registered.", StringComparison.OrdinalIgnoreCase);
+
+    private string BuildResetLink(string token)
+    {
+        var baseUrl = !string.IsNullOrWhiteSpace(_frontendOptions.BaseUrl)
+            ? _frontendOptions.BaseUrl!.TrimEnd('/')
+            : $"{Request.Scheme}://{Request.Host}";
+
+        return $"{baseUrl}/reset-password?token={Uri.EscapeDataString(token)}";
+    }
 
     private async Task SendResetEmailAsync(string email, string resetLink)
     {

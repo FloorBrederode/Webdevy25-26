@@ -37,6 +37,7 @@ static void ConfigureServices(IServiceCollection services, ConfigurationManager 
 {
     services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
     services.Configure<SmtpOptions>(configuration.GetSection("Smtp"));
+    services.Configure<FrontendOptions>(configuration.GetSection("Frontend"));
 
     var connectionString = ResolveConnectionString(configuration, environment);
     services.AddDbContext<WebDevDbContext>(options => options.UseSqlite(connectionString));
