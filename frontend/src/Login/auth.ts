@@ -227,16 +227,35 @@ function mapAuthPayload(
   payload: LoginResponseDto | RegisterResponseDto,
   fallbackEmail: string
 ): AuthSession {
-  const email = 'Email' in payload && typeof payload.Email === 'string' && payload.Email
-    ? payload.Email
-    : fallbackEmail;
+  const normalized = normalizeAuthPayload(payload);
+  const email = normalized.email ?? fallbackEmail;
 
   return {
-    id: payload.ID,
-    name: payload.Name,
+    id: normalized.id,
+    name: normalized.name ?? email,
     email,
-    role: payload.Role,
-    token: payload.Token,
-    expiresAt: payload.ExpiresAt
+    role: normalized.role,
+    token: normalized.token,
+    expiresAt: normalized.expiresAt
   };
+}
+
+function normalizeAuthPayload(payload: LoginResponseDto | RegisterResponseDto): {
+  id: string;
+  name?: string;
+  email?: string;
+  role: string;
+  token: string;
+  expiresAt: string;
+} {
+  const obj = payload as Record<string, unknown>;
+
+  const id = (obj.ID ?? obj.id) as string;
+  const name = (obj.Name ?? obj.name) as string | undefined;
+  const email = (obj.Email ?? obj.email) as string | undefined;
+  const role = (obj.Role ?? obj.role) as string;
+  const token = (obj.Token ?? obj.token) as string;
+  const expiresAt = (obj.ExpiresAt ?? obj.expiresAt) as string;
+
+  return { id, name, email, role, token, expiresAt };
 }

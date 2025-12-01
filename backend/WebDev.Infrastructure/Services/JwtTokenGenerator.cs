@@ -31,10 +31,10 @@ public sealed class JwtTokenGenerator : IJwtTokenGenerator
         {
             new(JwtRegisteredClaimNames.Sub, user.Id),
             new(JwtRegisteredClaimNames.Email, user.Email),
-            new(ClaimTypes.NameIdentifier, user.Id)
+            new(ClaimTypes.Name, user.Name),
+            new(ClaimTypes.NameIdentifier, user.Id),
+            new (ClaimTypes.Role, user.Role.ToString())
         };
-
-        claims.Add(new Claim(ClaimTypes.Role, user.Role.ToString()));
 
         var token = new JwtSecurityToken(
             issuer: _options.Issuer,
