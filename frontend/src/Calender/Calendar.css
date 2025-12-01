@@ -1,0 +1,125 @@
+/* Algemene layout */
+.app-container {
+    display: flex;
+    height: 100vh;
+    background-color: #f4f6fa;
+    font-family: sans-serif;
+}
+
+/* Zijmenu */
+.sidebar {
+    width: 230px;
+    background-color: #0f172a;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.sidebar-title {
+    font-weight: bold;
+    margin-bottom: 40px;
+}
+
+.nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.nav-item {
+    text-align: left;
+    background: none;
+    color: #cbd5e1;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.nav-item:hover {
+    background-color: #1e293b;
+}
+
+.nav-item.active {
+    background-color: #334155;
+    color: white;
+}
+
+/* Kalendergedeelte */
+.calendar-container {
+    flex: 1;
+    padding: 40px;
+}
+
+.calendar-card {
+    background: white;
+    border-radius: 19px;
+    /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); */
+    padding: 30px;
+    /* max-width: 600px; */
+}
+
+/* Header van kalender */
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.calendar-title {
+    font-weight: 600;
+}
+
+.calendar-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.control-button,
+.today-button {
+    border: 1px solid #d1d5db;
+    background: white;
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 6px 10px;
+}
+
+.control-button:hover,
+.today-button:hover {
+    background: #f3f4f6;
+}
+
+/* Raster van kalender */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+}
+
+.weekday {
+    color: #6b7280;
+    margin-bottom: 4px;
+}
+
+.day-cell {
+    border: 1px solid #e5e7eb;
+    padding: 20px 0;
+    height: 30px;
+    cursor: pointer;
+    text-align: left;
+}
+
+.day-cell.current {
+    color: #111827;
+}
+
+.day-cell.other {
+    background: #f9fafb;
+    color: #9ca3af;
+}
+
+.day-cell:hover {
+    background: #f3f4f6;
+}

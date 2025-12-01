@@ -1,0 +1,150 @@
+/* Root layout */
+.admin-dashboard {
+    margin: 0;
+    min-height: 100vh;
+    background-color: #f4f6fa;
+    font-family: sans-serif;
+    color: #0f172a;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+.admin-header {
+    background-color: #0f172a;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.admin-header h1 {
+    font-size: 1.25rem;
+    font-weight: bold;
+}
+
+.admin-nav {
+    display: flex;
+    gap: 2rem;
+}
+
+.admin-nav button {
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.admin-nav button:hover {
+    color: #94a3b8;
+}
+
+/* Main section */
+.admin-main {
+    flex-grow: 1;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* Grid for stat cards */
+.stat-grid {
+    display: grid;
+    gap: 3rem;
+    /* space between boxes */
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    align-items: stretch;
+}
+
+/* Stat cards */
+.stat-card {
+    background-color: #ffffff;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.stat-card p {
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+/* Activity feed */
+.activity-feed {
+    background-color: #ffffff;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.activity-feed h2 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.activity-feed ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.activity-feed li {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 0.9rem;
+    color: #334155;
+}
+
+.activity-feed li:last-child {
+    border-bottom: none;
+}
+
+/* Responsive layout adjustments */
+@media (max-width: 640px) {
+    .admin-nav {
+        display: none;
+        /* hide nav on small screens */
+    }
+
+    .stat-grid {
+        gap: 2rem;
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Return to calendar link */
+.return-link {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.95rem;
+    cursor: pointer;
+    text-decoration: none;
+    margin-right: 2rem;
+    transition: color 0.3s ease;
+    align-self: center;
+}
+
+.return-link:hover {
+    color: #cbd5e1;
+    text-decoration: underline;
+}

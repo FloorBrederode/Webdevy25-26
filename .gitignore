@@ -7,18 +7,36 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Dependencies / build outputs
+node_modules/
+dist/
+dist-ssr/
 *.local
+**/bin/
+**/obj/
+*.dll
+*.pdb
+
+# Database / generated assets
+Database/*.db
+Database/generated_passwords.csv
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
 *.sw?
+
+# Misc tooling
+*.lock.json
+*.cache
+
+# ignore stupid hash files
+obj/
+backend/obj/
+backend/obj/Debug/net9.0/webdev.AssemblyInfo.cs
+backend/obj/Debug/net9.0/webdev.AssemblyInfoInputs.cache
