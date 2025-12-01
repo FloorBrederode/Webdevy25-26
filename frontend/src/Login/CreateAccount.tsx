@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { validateEmail } from './auth';
+import {
+  ApiError,
+  persistAuthSession,
+  registerUser,
+  validateEmail
+} from './auth';
 import './Login.css';
 import './CreateAccount.css';
 
@@ -18,6 +23,7 @@ type ErrorState = {
   email: string;
   password: string;
   confirmPassword: string;
+  form: string;
 };
 
 const defaultState: FormState = {
@@ -28,15 +34,19 @@ const defaultState: FormState = {
   confirmPassword: '',
 };
 
+const defaultErrors: ErrorState = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+  form: '',
+};
+
 export default function CreateAccount(): React.ReactElement {
   const [form, setForm] = useState<FormState>(defaultState);
-  const [errors, setErrors] = useState<ErrorState>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-  });
+  const [errors, setErrors] = useState<ErrorState>(defaultErrors);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -47,27 +57,74 @@ export default function CreateAccount(): React.ReactElement {
   const handleChange = (field: keyof FormState) => (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setForm((prev) => ({ ...prev, [field]: value }));
-    setErrors((prev) => ({ ...prev, [field]: '' }));
+    setErrors((prev) => ({ ...prev, [field]: '', form: '' }));
   };
 
   const validate = (): boolean => {
+    const trimmedFirst = form.firstName.trim();
+    const trimmedLast = form.lastName.trim();
+    const trimmedEmail = form.email.trim();
+
     const nextErrors: ErrorState = {
-      firstName: form.firstName.trim() ? '' : 'Please enter your first name.',
-      lastName: form.lastName.trim() ? '' : 'Please enter your last name.',
-      email: validateEmail(form.email) ? '' : 'Please enter a valid email.',
+      firstName: trimmedFirst ? '' : 'Please enter your first name.',
+      lastName: trimmedLast ? '' : 'Please enter your last name.',
+      email: validateEmail(trimmedEmail) ? '' : 'Please enter a valid email.',
       password: form.password.length >= 6 ? '' : 'Password must be at least 6 characters.',
       confirmPassword:
         form.confirmPassword === form.password ? '' : 'Passwords do not match.',
+      form: '',
     };
 
     setErrors(nextErrors);
-    return Object.values(nextErrors).every((err) => err === '');
+    const hasError = Object.entries(nextErrors).some(
+      ([key, err]) => key !== 'form' && err !== ''
+    );
+
+    return !hasError;
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
     if (!validate()) return;
-    navigate('/login');
+
+    setIsSubmitting(true);
+    setErrors((prev) => ({ ...prev, form: '' }));
+
+    const name = `${form.firstName.trim()} ${form.lastName.trim()}`.replace(/\s+/g, ' ');
+    const payload = {
+      name: name.trim(),
+      email: form.email.trim(),
+      password: form.password
+    };
+
+    try {
+      const session = await registerUser(payload);
+      persistAuthSession(session, true);
+      navigate('/calendar');
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const fieldErrors = err.fieldErrors ?? {};
+        const nextErrors: Partial<ErrorState> = {
+          form: fieldErrors.form ?? err.message
+        };
+
+        if (fieldErrors.name) nextErrors.firstName = fieldErrors.name;
+        if (fieldErrors.email) nextErrors.email = fieldErrors.email;
+        if (fieldErrors.password) nextErrors.password = fieldErrors.password;
+        if (err.status === 409 && !nextErrors.email && fieldErrors.form) {
+          nextErrors.email = fieldErrors.form;
+        }
+
+        setErrors((prev) => ({ ...prev, ...nextErrors }));
+      } else {
+        setErrors((prev) => ({
+          ...prev,
+          form: 'Unable to create your account right now. Please try again.'
+        }));
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -164,8 +221,16 @@ export default function CreateAccount(): React.ReactElement {
           {errors.confirmPassword && <div className="error show">{errors.confirmPassword}</div>}
         </div>
 
+        {errors.form && (
+          <div className="error show" role="alert">
+            {errors.form}
+          </div>
+        )}
+
         <div className="actions">
-          <button className="btn primary" type="submit">Create account</button>
+          <button className="btn primary" type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Creating account...' : 'Create account'}
+          </button>
         </div>
       </form>
 
