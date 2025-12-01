@@ -36,6 +36,8 @@ static void ConfigureConfiguration(ConfigurationManager configuration, IHostEnvi
 static void ConfigureServices(IServiceCollection services, ConfigurationManager configuration, IHostEnvironment environment)
 {
     services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
+    services.Configure<SmtpOptions>(configuration.GetSection("Smtp"));
+    services.Configure<FrontendOptions>(configuration.GetSection("Frontend"));
 
     var connectionString = ResolveConnectionString(configuration, environment);
     services.AddDbContext<WebDevDbContext>(options => options.UseSqlite(connectionString));
@@ -43,6 +45,8 @@ static void ConfigureServices(IServiceCollection services, ConfigurationManager 
     services.AddScoped<IUserService, UserService>();
     services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
     services.AddScoped<IRoomAvailabilityService, RoomAvailabilityService>();
+    services.AddSingleton<IPasswordResetStore, InMemoryPasswordResetStore>();
+    services.AddScoped<IEmailSender, SmtpEmailSender>();
 
     ConfigureAuthentication(services, configuration);
 

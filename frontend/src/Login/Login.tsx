@@ -1,64 +1,96 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ApiError,
+  getStoredAuthSession,
   loginUser,
   persistAuthSession,
-  getStoredAuthSession,
   validateEmail,
   type LoginErrors
 } from './auth';
+import {
+  AccountFooter,
+  AuthPage,
+  FormMessage,
+  InputField,
+  PasswordField
+} from './components';
 import './Login.css';
 
 type LoginProps = {
   onSuccess?: () => void;
 };
 
+type LoginFormState = {
+  email: string;
+  password: string;
+  remember: boolean;
+};
+
 export default function Login({ onSuccess }: LoginProps): React.ReactElement {
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [remember, setRemember] = useState<boolean>(false);
-  const [showPass, setShowPass] = useState<boolean>(false);
-  const [errors, setErrors] = useState<LoginErrors>({});
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    document.body.classList.add('login-page');
-    return () => document.body.classList.remove('login-page');
-  }, []);
-
-  const redirect = (): void => {
+  const handleSuccess = useCallback(() => {
     if (typeof onSuccess === 'function') {
       onSuccess();
     } else {
       navigate('/calendar');
     }
-  };
+  }, [navigate, onSuccess]);
 
+  useStoredSessionRedirect(handleSuccess);
+
+  return (
+    <AuthPage title="Sign in" subtitle="Welcome back">
+      <LoginForm onSuccess={handleSuccess} />
+    </AuthPage>
+  );
+}
+
+function useStoredSessionRedirect(onSuccess: () => void): void {
   useEffect(() => {
     const session = getStoredAuthSession();
     if (session) {
-      if (typeof onSuccess === 'function') {
-        onSuccess();
-      } else {
-        navigate('/calendar');
-      }
+      onSuccess();
     }
-  }, [navigate, onSuccess]);
+  }, [onSuccess]);
+}
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
-    e.preventDefault();
+type LoginFormProps = {
+  onSuccess: () => void;
+};
+
+function LoginForm({ onSuccess }: LoginFormProps): React.ReactElement {
+  const [form, setForm] = useState<LoginFormState>({
+    email: '',
+    password: '',
+    remember: false
+  });
+  const [errors, setErrors] = useState<LoginErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  const handleFieldChange = (field: 'email' | 'password') => (value: string): void => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    setErrors((prev) => {
+      if (!prev[field] && !prev.auth) return prev;
+      const next = { ...prev };
+      delete next[field];
+      delete next.auth;
+      return next;
+    });
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    event.preventDefault();
 
     const validation: LoginErrors = {};
-    const trimmedEmail = email.trim();
-    const trimmedPassword = password.trim();
+    const email = form.email.trim();
+    const password = form.password.trim();
 
-    if (!validateEmail(trimmedEmail)) {
+    if (!validateEmail(email)) {
       validation.email = 'Please enter a valid email.';
     }
 
-    if (trimmedPassword.length < 6) {
+    if (password.length < 6) {
       validation.password = 'Password must be at least 6 characters.';
     }
 
@@ -71,9 +103,9 @@ export default function Login({ onSuccess }: LoginProps): React.ReactElement {
     setIsSubmitting(true);
 
     try {
-      const session = await loginUser(trimmedEmail, trimmedPassword);
-      persistAuthSession(session, remember);
-      redirect();
+      const session = await loginUser(email, password);
+      persistAuthSession(session, form.remember);
+      onSuccess();
     } catch (err) {
       if (err instanceof ApiError) {
         const fieldErrors = err.fieldErrors ?? {};
@@ -93,109 +125,64 @@ export default function Login({ onSuccess }: LoginProps): React.ReactElement {
   };
 
   return (
-    <section className="card" aria-labelledby="loginTitle">
-      <div className="head">
-        <div className="title" id="loginTitle">Sign in</div>
-        <div className="muted">Welcome back</div>
+    <form onSubmit={handleSubmit} noValidate>
+      <InputField
+        id="email"
+        name="email"
+        type="email"
+        label="Email"
+        value={form.email}
+        placeholder="you@company.com"
+        onChange={(e) => handleFieldChange('email')(e.target.value)}
+        error={errors.email}
+        required
+      />
+
+      <PasswordField
+        id="password"
+        name="password"
+        label="Password"
+        placeholder="Password"
+        value={form.password}
+        onChange={(e) => handleFieldChange('password')(e.target.value)}
+        error={errors.password}
+        toggleVisibility
+        required
+        minLength={6}
+      />
+
+      <FormMessage message={errors.auth} id="authError" />
+
+      <div className="row">
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+          <input
+            type="checkbox"
+            id="remember"
+            checked={form.remember}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((prev) => ({
+              ...prev,
+              remember: e.target.checked
+            }))}
+          />
+          {' '}
+          Remember me
+        </label>
+        <Link className="link" to="/forgot-password">
+          Forgot password?
+        </Link>
       </div>
 
-      <form onSubmit={handleSubmit} noValidate>
-        <div className="field">
-          <label htmlFor="email">Email</label>
-          <div className="input-wrap">
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={email}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                setEmail(e.target.value);
-                setErrors((prev) => {
-                  if (!prev.email && !prev.auth) return prev;
-                  const next = { ...prev };
-                  delete next.email;
-                  delete next.auth;
-                  return next;
-                });
-              }}
-              placeholder="you@company.com"
-              required
-            />
-          </div>
-          <div className={`error ${errors.email ? 'show' : ''}`} id="emailError" role="alert">
-            {errors.email ?? ''}
-          </div>
-        </div>
+      <div className="actions">
+        <button className="btn primary" type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Signing in...' : 'Sign in'}
+        </button>
+      </div>
 
-        <div className="field">
-          <label htmlFor="password">Password</label>
-          <div className="input-wrap">
-            <input
-              type={showPass ? 'text' : 'password'}
-              id="password"
-              name="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                setPassword(e.target.value);
-                setErrors((prev) => {
-                  if (!prev.password && !prev.auth) return prev;
-                  const next = { ...prev };
-                  delete next.password;
-                  delete next.auth;
-                  return next;
-                });
-              }}
-              required
-              minLength={6}
-            />
-            <button
-              type="button"
-              className="toggle-pass"
-              aria-label="Toggle password visibility"
-              onClick={() => setShowPass((s) => !s)}
-            >
-              👁
-            </button>
-          </div>
-          <div className={`error ${errors.password ? 'show' : ''}`} id="passError" role="alert">
-            {errors.password ?? ''}
-          </div>
-        </div>
-
-        {errors.auth && (
-          <div className="error show" id="authError" role="alert">
-            {errors.auth}
-          </div>
-        )}
-
-        <div className="row">
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-            <input
-              type="checkbox"
-              id="remember"
-              checked={remember}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRemember(e.target.checked)}
-            />
-            {' '}
-            Remember me
-          </label>
-          <Link className="link" to="/forgot-password">
-            Forgot password?
-          </Link>
-        </div>
-
-        <div className="actions">
-          <button className="btn primary" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Signing in...' : 'Sign in'}
-          </button>
-        </div>
-
-        <div className="account-footer">
-          <span className="muted">New here?</span>
-          <Link className="link" to="/register">Create an account</Link>
-        </div>
-      </form>
-    </section>
+      <AccountFooter
+        prompt="New here?"
+        linkText="Create an account"
+        to="/register"
+      />
+    </form>
   );
 }
