@@ -1,11 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useCallback, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ApiError,
   persistAuthSession,
   registerUser,
   validateEmail
 } from './auth';
+import {
+  AccountFooter,
+  AuthPage,
+  FormMessage,
+  InputField,
+  PasswordField
+} from './components';
 import './Login.css';
 import './CreateAccount.css';
 
@@ -18,14 +25,8 @@ type FormState = {
   confirmPassword: string;
 };
 
-type ErrorState = {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phoneNumber: string;
-  password: string;
-  confirmPassword: string;
-  form: string;
+type ErrorState = Partial<FormState> & {
+  form?: string;
 };
 
 const defaultState: FormState = {
@@ -37,76 +38,51 @@ const defaultState: FormState = {
   confirmPassword: '',
 };
 
-const defaultErrors: ErrorState = {
-  firstName: '',
-  lastName: '',
-  email: '',
-  phoneNumber: '',
-  password: '',
-  confirmPassword: '',
-  form: '',
+export default function CreateAccount(): React.ReactElement {
+  const navigate = useNavigate();
+  const handleSuccess = useCallback(() => navigate('/calendar'), [navigate]);
+
+  return (
+    <AuthPage
+      title="Create account"
+      subtitle="Start organising your schedule"
+      bodyClass="account-page"
+      className="account-card"
+    >
+      <CreateAccountForm onSuccess={handleSuccess} />
+      <AccountFooter prompt="Already have an account?" linkText="Sign in" to="/login" />
+    </AuthPage>
+  );
+}
+
+type CreateAccountFormProps = {
+  onSuccess: () => void;
 };
 
-export default function CreateAccount(): React.ReactElement {
+function CreateAccountForm({ onSuccess }: CreateAccountFormProps): React.ReactElement {
   const [form, setForm] = useState<FormState>(defaultState);
-  const [errors, setErrors] = useState<ErrorState>(defaultErrors);
+  const [errors, setErrors] = useState<ErrorState>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const navigate = useNavigate();
 
-  useEffect(() => {
-    document.body.classList.add('account-page');
-    return () => document.body.classList.remove('account-page');
-  }, []);
-
-  const handleChange = (field: keyof FormState) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
+  const handleChange = (field: keyof FormState) => (value: string): void => {
     setForm((prev) => ({ ...prev, [field]: value }));
-    setErrors((prev) => ({ ...prev, [field]: '', form: '' }));
-  };
-
-  const validate = (): boolean => {
-    const trimmedFirst = form.firstName.trim();
-    const trimmedLast = form.lastName.trim();
-    const trimmedEmail = form.email.trim();
-    const trimmedPhone = form.phoneNumber.trim();
-    const phoneDigits = trimmedPhone.replace(/[^\d]/g, '');
-    const phoneHasOnlyAllowedChars = trimmedPhone === '' || /^\+?[\d\s().-]+$/.test(trimmedPhone);
-    const phoneValid = trimmedPhone === '' || (
-      phoneHasOnlyAllowedChars &&
-      phoneDigits.length >= 8 &&
-      phoneDigits.length <= 15
-    );
-
-    const nextErrors: ErrorState = {
-      firstName: trimmedFirst ? '' : 'Please enter your first name.',
-      lastName: trimmedLast ? '' : 'Please enter your last name.',
-      email: validateEmail(trimmedEmail) ? '' : 'Please enter a valid email.',
-      phoneNumber: phoneValid ? '' : 'Please enter a valid phone number.',
-      password: form.password.length >= 6 ? '' : 'Password must be at least 6 characters.',
-      confirmPassword:
-        form.confirmPassword === form.password ? '' : 'Passwords do not match.',
-      form: '',
-    };
-
-    setErrors(nextErrors);
-    const hasError = Object.entries(nextErrors).some(
-      ([key, err]) => key !== 'form' && err !== ''
-    );
-
-    return !hasError;
+    setErrors((prev) => ({ ...prev, [field]: undefined, form: undefined }));
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
-    if (!validate()) return;
+    const validation = validateForm(form);
 
+    if (Object.keys(validation).length > 0) {
+      setErrors(validation);
+      return;
+    }
+
+    setErrors({});
     setIsSubmitting(true);
-    setErrors((prev) => ({ ...prev, form: '' }));
 
     const name = `${form.firstName.trim()} ${form.lastName.trim()}`.replace(/\s+/g, ' ');
-    const normalizedPhone = form.phoneNumber.trim()
-      ? `${form.phoneNumber.trim().startsWith('+') ? '+' : ''}${form.phoneNumber.replace(/[^\d]/g, '')}`
-      : undefined;
+    const normalizedPhone = normalizePhone(form.phoneNumber);
     const payload = {
       name: name.trim(),
       email: form.email.trim(),
@@ -117,160 +93,162 @@ export default function CreateAccount(): React.ReactElement {
     try {
       const session = await registerUser(payload);
       persistAuthSession(session, true);
-      navigate('/calendar');
+      onSuccess();
     } catch (err) {
-      if (err instanceof ApiError) {
-        const fieldErrors = err.fieldErrors ?? {};
-        const nextErrors: Partial<ErrorState> = {
-          form: fieldErrors.form ?? err.message
-        };
-
-        if (fieldErrors.name) nextErrors.firstName = fieldErrors.name;
-        if (fieldErrors.email) nextErrors.email = fieldErrors.email;
-        if (fieldErrors.password) nextErrors.password = fieldErrors.password;
-        if (err.status === 409 && !nextErrors.email && fieldErrors.form) {
-          nextErrors.email = fieldErrors.form;
-        }
-
-        setErrors((prev) => ({ ...prev, ...nextErrors }));
-      } else {
-        setErrors((prev) => ({
-          ...prev,
-          form: 'Unable to create your account right now. Please try again.'
-        }));
-      }
+      handleSubmitError(err, setErrors);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <section className="card account-card" aria-labelledby="createAccountTitle">
-      <div className="head">
-        <div className="title" id="createAccountTitle">Create account</div>
-        <div className="muted">Start organising your schedule</div>
+    <form onSubmit={handleSubmit} noValidate>
+      <div className="form-row">
+        <InputField
+          id="firstName"
+          name="firstName"
+          type="text"
+          label="First name"
+          autoComplete="given-name"
+          value={form.firstName}
+          onChange={(e) => handleChange('firstName')(e.target.value)}
+          error={errors.firstName}
+          required
+        />
+
+        <InputField
+          id="lastName"
+          name="lastName"
+          type="text"
+          label="Last name"
+          autoComplete="family-name"
+          value={form.lastName}
+          onChange={(e) => handleChange('lastName')(e.target.value)}
+          error={errors.lastName}
+          required
+        />
       </div>
 
-      <form onSubmit={handleSubmit} noValidate>
-        <div className="form-row">
-          <div className="field">
-            <label htmlFor="firstName">First name</label>
-            <div className="input-wrap">
-              <input
-                type="text"
-                id="firstName"
-                name="firstName"
-                autoComplete="given-name"
-                value={form.firstName}
-                onChange={handleChange('firstName')}
-                required
-              />
-            </div>
-            {errors.firstName && <div className="error show">{errors.firstName}</div>}
-          </div>
+      <InputField
+        id="email"
+        name="email"
+        type="email"
+        label="Email"
+        autoComplete="email"
+        placeholder="you@company.com"
+        value={form.email}
+        onChange={(e) => handleChange('email')(e.target.value)}
+        error={errors.email}
+        required
+      />
 
-          <div className="field">
-            <label htmlFor="lastName">Last name</label>
-            <div className="input-wrap">
-              <input
-                type="text"
-                id="lastName"
-                name="lastName"
-                autoComplete="family-name"
-                value={form.lastName}
-                onChange={handleChange('lastName')}
-                required
-              />
-            </div>
-            {errors.lastName && <div className="error show">{errors.lastName}</div>}
-          </div>
-        </div>
+      <InputField
+        id="phoneNumber"
+        name="phoneNumber"
+        type="tel"
+        label="Phone number (optional)"
+        autoComplete="tel"
+        placeholder="+1 555 123 4567"
+        value={form.phoneNumber}
+        onChange={(e) => handleChange('phoneNumber')(e.target.value)}
+        error={errors.phoneNumber}
+      />
 
-        <div className="field">
-          <label htmlFor="email">Email</label>
-          <div className="input-wrap">
-            <input
-              type="email"
-              id="email"
-              name="email"
-              autoComplete="email"
-              placeholder="you@company.com"
-              value={form.email}
-              onChange={handleChange('email')}
-              required
-            />
-          </div>
-          {errors.email && <div className="error show">{errors.email}</div>}
-        </div>
+      <PasswordField
+        id="password"
+        name="password"
+        label="Password"
+        autoComplete="new-password"
+        placeholder="At least 6 characters"
+        value={form.password}
+        onChange={(e) => handleChange('password')(e.target.value)}
+        error={errors.password}
+        toggleVisibility
+        required
+        minLength={6}
+      />
 
-        <div className="field">
-          <label htmlFor="phoneNumber">Phone number (optional)</label>
-          <div className="input-wrap">
-            <input
-              type="tel"
-              id="phoneNumber"
-              name="phoneNumber"
-              autoComplete="tel"
-              placeholder="+1 555 123 4567"
-              value={form.phoneNumber}
-              onChange={handleChange('phoneNumber')}
-            />
-          </div>
-          {errors.phoneNumber && <div className="error show">{errors.phoneNumber}</div>}
-        </div>
+      <PasswordField
+        id="confirmPassword"
+        name="confirmPassword"
+        label="Confirm password"
+        autoComplete="new-password"
+        placeholder="Repeat password"
+        value={form.confirmPassword}
+        onChange={(e) => handleChange('confirmPassword')(e.target.value)}
+        error={errors.confirmPassword}
+        toggleVisibility
+        required
+      />
 
-        <div className="field">
-          <label htmlFor="password">Password</label>
-          <div className="input-wrap">
-            <input
-              type="password"
-              id="password"
-              name="password"
-              autoComplete="new-password"
-              placeholder="At least 6 characters"
-              value={form.password}
-              onChange={handleChange('password')}
-              required
-              minLength={6}
-            />
-          </div>
-          {errors.password && <div className="error show">{errors.password}</div>}
-        </div>
+      <FormMessage message={errors.form} />
 
-        <div className="field">
-          <label htmlFor="confirmPassword">Confirm password</label>
-          <div className="input-wrap">
-            <input
-              type="password"
-              id="confirmPassword"
-              name="confirmPassword"
-              autoComplete="new-password"
-              placeholder="Repeat password"
-              value={form.confirmPassword}
-              onChange={handleChange('confirmPassword')}
-              required
-            />
-          </div>
-          {errors.confirmPassword && <div className="error show">{errors.confirmPassword}</div>}
-        </div>
-
-        {errors.form && (
-          <div className="error show" role="alert">
-            {errors.form}
-          </div>
-        )}
-
-        <div className="actions">
-          <button className="btn primary" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Creating account...' : 'Create account'}
-          </button>
-        </div>
-      </form>
-
-      <div className="account-footer">
-        <span className="muted">Already have an account?</span>
-        <Link className="link" to="/login">Sign in</Link>
+      <div className="actions">
+        <button className="btn primary" type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Creating account...' : 'Create account'}
+        </button>
       </div>
-    </section>
+    </form>
   );
+}
+
+function validateForm(form: FormState): ErrorState {
+  const trimmedFirst = form.firstName.trim();
+  const trimmedLast = form.lastName.trim();
+  const trimmedEmail = form.email.trim();
+  const trimmedPhone = form.phoneNumber.trim();
+  const phoneDigits = trimmedPhone.replace(/[^\d]/g, '');
+  const phoneHasOnlyAllowedChars = trimmedPhone === '' || /^\+?[\d\s().-]+$/.test(trimmedPhone);
+  const phoneValid = trimmedPhone === '' || (
+    phoneHasOnlyAllowedChars &&
+    phoneDigits.length >= 8 &&
+    phoneDigits.length <= 15
+  );
+
+  const nextErrors: ErrorState = {};
+
+  if (!trimmedFirst) nextErrors.firstName = 'Please enter your first name.';
+  if (!trimmedLast) nextErrors.lastName = 'Please enter your last name.';
+  if (!validateEmail(trimmedEmail)) nextErrors.email = 'Please enter a valid email.';
+  if (!phoneValid) nextErrors.phoneNumber = 'Please enter a valid phone number.';
+  if (form.password.length < 6) nextErrors.password = 'Password must be at least 6 characters.';
+  if (form.confirmPassword !== form.password) {
+    nextErrors.confirmPassword = 'Passwords do not match.';
+  }
+
+  return nextErrors;
+}
+
+function normalizePhone(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+
+  const prefix = trimmed.startsWith('+') ? '+' : '';
+  const digits = trimmed.replace(/[^\d]/g, '');
+  return `${prefix}${digits}`;
+}
+
+function handleSubmitError(
+  err: unknown,
+  setErrors: React.Dispatch<React.SetStateAction<ErrorState>>
+): void {
+  if (err instanceof ApiError) {
+    const fieldErrors = err.fieldErrors ?? {};
+    const nextErrors: ErrorState = {
+      form: fieldErrors.form ?? err.message
+    };
+
+    if (fieldErrors.name) nextErrors.firstName = fieldErrors.name;
+    if (fieldErrors.email) nextErrors.email = fieldErrors.email;
+    if (fieldErrors.password) nextErrors.password = fieldErrors.password;
+    if (err.status === 409 && !nextErrors.email && fieldErrors.form) {
+      nextErrors.email = fieldErrors.form;
+    }
+
+    setErrors(nextErrors);
+  } else {
+    setErrors({
+      form: 'Unable to create your account right now. Please try again.'
+    });
+  }
 }

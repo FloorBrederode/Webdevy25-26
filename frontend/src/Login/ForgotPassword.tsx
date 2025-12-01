@@ -1,6 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { validateEmail } from './auth';
+import {
+  AccountFooter,
+  AuthPage,
+  FormMessage,
+  InputField
+} from './components';
 import './Login.css';
 
 export default function ForgotPassword(): React.ReactElement {
@@ -10,17 +16,9 @@ export default function ForgotPassword(): React.ReactElement {
   const [error, setError] = useState<string>('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    document.body.classList.add('login-page');
-    return () => document.body.classList.remove('login-page');
-  }, []);
-
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    setEmail(event.target.value);
-    if (error) {
-      setError('');
-    }
-  };
+  const subtitle = submitted
+    ? 'If we find a matching account, we will email password reset instructions.'
+    : 'Please enter your email and we will send you password reset instructions.';
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -32,70 +30,104 @@ export default function ForgotPassword(): React.ReactElement {
 
     setSubmittedEmail(trimmedEmail);
     setSubmitted(true);
+    setError('');
     // A real implementation would trigger an API call here.
   };
 
   return (
-    <section className="card" aria-labelledby="forgotTitle">
-      <div className="head">
-        <div className="title" id="forgotTitle">Reset password</div>
-        <div className="muted">
-          {submitted
-            ? 'If we find a matching account, we will email password reset instructions.'
-            : 'Please enter your email and we will send you password reset instructions.'}
-        </div>
-      </div>
-
+    <AuthPage title="Reset password" subtitle={subtitle}>
       {submitted ? (
-        <>
-          <div className="success" role="status">
-            Check your inbox for a message about resetting the password for <strong>{submittedEmail}</strong>.
-          </div>
-          <div className="actions">
-            <button
-              className="btn primary"
-              type="button"
-              onClick={() => navigate('/login')}
-            >
-              Back to sign in
-            </button>
-          </div>
-          <div className="account-footer">
-            <span className="muted">Need to create an account?</span>
-            <Link className="link" to="/register">Create account</Link>
-          </div>
-        </>
+        <ResetConfirmation
+          email={submittedEmail}
+          onBack={() => navigate('/login')}
+        />
       ) : (
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="field">
-            <label htmlFor="forgotEmail">Email</label>
-            <div className="input-wrap">
-              <input
-                type="email"
-                id="forgotEmail"
-                name="email"
-                placeholder="you@company.com"
-                autoComplete="email"
-                value={email}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            {error && (
-              <div className="error show" role="alert">
-                {error}
-              </div>
-            )}
-          </div>
-          <div className="actions">
-            <button className="btn primary" type="submit">Send reset link</button>
-          </div>
-          <div className="account-footer">
-            <span className="muted">Remembered your password?</span>
-            <Link className="link" to="/login">Back to sign in</Link>
-          </div>
-        </form>
+        <ResetRequestForm
+          email={email}
+          error={error}
+          onEmailChange={(value) => {
+            setEmail(value);
+            if (error) setError('');
+          }}
+          onSubmit={handleSubmit}
+        />
       )}
-    </section>
+    </AuthPage>
+  );
+}
+
+type ResetRequestFormProps = {
+  email: string;
+  error?: string;
+  onEmailChange: (value: string) => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+};
+
+function ResetRequestForm({
+  email,
+  error,
+  onEmailChange,
+  onSubmit
+}: ResetRequestFormProps): React.ReactElement {
+  return (
+    <form onSubmit={onSubmit} noValidate>
+      <InputField
+        id="forgotEmail"
+        name="email"
+        type="email"
+        label="Email"
+        autoComplete="email"
+        placeholder="you@company.com"
+        value={email}
+        onChange={(e) => onEmailChange(e.target.value)}
+        error={error}
+        required
+      />
+      <div className="actions">
+        <button className="btn primary" type="submit">Send reset link</button>
+      </div>
+      <AccountFooter
+        prompt="Remembered your password?"
+        linkText="Back to sign in"
+        to="/login"
+      />
+    </form>
+  );
+}
+
+type ResetConfirmationProps = {
+  email: string;
+  onBack: () => void;
+};
+
+function ResetConfirmation({
+  email,
+  onBack
+}: ResetConfirmationProps): React.ReactElement {
+  return (
+    <>
+      <FormMessage
+        tone="success"
+        message={(
+          <>
+            Check your inbox for a message about resetting the password for <strong>{email}</strong>.
+          </>
+        )}
+      />
+      <div className="actions">
+        <button
+          className="btn primary"
+          type="button"
+          onClick={onBack}
+        >
+          Back to sign in
+        </button>
+      </div>
+      <AccountFooter
+        prompt="Need to create an account?"
+        linkText="Create account"
+        to="/register"
+      />
+    </>
   );
 }
