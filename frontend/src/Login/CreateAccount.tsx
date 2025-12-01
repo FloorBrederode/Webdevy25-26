@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { validateEmail } from './auth';
+import {
+  ApiError,
+  persistAuthSession,
+  registerUser,
+  validateEmail
+} from './auth';
 import './Login.css';
 import './CreateAccount.css';
 
@@ -8,6 +13,7 @@ type FormState = {
   firstName: string;
   lastName: string;
   email: string;
+  phoneNumber: string;
   password: string;
   confirmPassword: string;
 };
@@ -16,27 +22,35 @@ type ErrorState = {
   firstName: string;
   lastName: string;
   email: string;
+  phoneNumber: string;
   password: string;
   confirmPassword: string;
+  form: string;
 };
 
 const defaultState: FormState = {
   firstName: '',
   lastName: '',
   email: '',
+  phoneNumber: '',
   password: '',
   confirmPassword: '',
 };
 
+const defaultErrors: ErrorState = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  phoneNumber: '',
+  password: '',
+  confirmPassword: '',
+  form: '',
+};
+
 export default function CreateAccount(): React.ReactElement {
   const [form, setForm] = useState<FormState>(defaultState);
-  const [errors, setErrors] = useState<ErrorState>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-  });
+  const [errors, setErrors] = useState<ErrorState>(defaultErrors);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -47,27 +61,87 @@ export default function CreateAccount(): React.ReactElement {
   const handleChange = (field: keyof FormState) => (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setForm((prev) => ({ ...prev, [field]: value }));
-    setErrors((prev) => ({ ...prev, [field]: '' }));
+    setErrors((prev) => ({ ...prev, [field]: '', form: '' }));
   };
 
   const validate = (): boolean => {
+    const trimmedFirst = form.firstName.trim();
+    const trimmedLast = form.lastName.trim();
+    const trimmedEmail = form.email.trim();
+    const trimmedPhone = form.phoneNumber.trim();
+    const phoneDigits = trimmedPhone.replace(/[^\d]/g, '');
+    const phoneHasOnlyAllowedChars = trimmedPhone === '' || /^\+?[\d\s().-]+$/.test(trimmedPhone);
+    const phoneValid = trimmedPhone === '' || (
+      phoneHasOnlyAllowedChars &&
+      phoneDigits.length >= 8 &&
+      phoneDigits.length <= 15
+    );
+
     const nextErrors: ErrorState = {
-      firstName: form.firstName.trim() ? '' : 'Please enter your first name.',
-      lastName: form.lastName.trim() ? '' : 'Please enter your last name.',
-      email: validateEmail(form.email) ? '' : 'Please enter a valid email.',
+      firstName: trimmedFirst ? '' : 'Please enter your first name.',
+      lastName: trimmedLast ? '' : 'Please enter your last name.',
+      email: validateEmail(trimmedEmail) ? '' : 'Please enter a valid email.',
+      phoneNumber: phoneValid ? '' : 'Please enter a valid phone number.',
       password: form.password.length >= 6 ? '' : 'Password must be at least 6 characters.',
       confirmPassword:
         form.confirmPassword === form.password ? '' : 'Passwords do not match.',
+      form: '',
     };
 
     setErrors(nextErrors);
-    return Object.values(nextErrors).every((err) => err === '');
+    const hasError = Object.entries(nextErrors).some(
+      ([key, err]) => key !== 'form' && err !== ''
+    );
+
+    return !hasError;
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
     if (!validate()) return;
-    navigate('/login');
+
+    setIsSubmitting(true);
+    setErrors((prev) => ({ ...prev, form: '' }));
+
+    const name = `${form.firstName.trim()} ${form.lastName.trim()}`.replace(/\s+/g, ' ');
+    const normalizedPhone = form.phoneNumber.trim()
+      ? `${form.phoneNumber.trim().startsWith('+') ? '+' : ''}${form.phoneNumber.replace(/[^\d]/g, '')}`
+      : undefined;
+    const payload = {
+      name: name.trim(),
+      email: form.email.trim(),
+      phoneNumber: normalizedPhone,
+      password: form.password
+    };
+
+    try {
+      const session = await registerUser(payload);
+      persistAuthSession(session, true);
+      navigate('/calendar');
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const fieldErrors = err.fieldErrors ?? {};
+        const nextErrors: Partial<ErrorState> = {
+          form: fieldErrors.form ?? err.message
+        };
+
+        if (fieldErrors.name) nextErrors.firstName = fieldErrors.name;
+        if (fieldErrors.email) nextErrors.email = fieldErrors.email;
+        if (fieldErrors.password) nextErrors.password = fieldErrors.password;
+        if (err.status === 409 && !nextErrors.email && fieldErrors.form) {
+          nextErrors.email = fieldErrors.form;
+        }
+
+        setErrors((prev) => ({ ...prev, ...nextErrors }));
+      } else {
+        setErrors((prev) => ({
+          ...prev,
+          form: 'Unable to create your account right now. Please try again.'
+        }));
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -130,6 +204,22 @@ export default function CreateAccount(): React.ReactElement {
         </div>
 
         <div className="field">
+          <label htmlFor="phoneNumber">Phone number (optional)</label>
+          <div className="input-wrap">
+            <input
+              type="tel"
+              id="phoneNumber"
+              name="phoneNumber"
+              autoComplete="tel"
+              placeholder="+1 555 123 4567"
+              value={form.phoneNumber}
+              onChange={handleChange('phoneNumber')}
+            />
+          </div>
+          {errors.phoneNumber && <div className="error show">{errors.phoneNumber}</div>}
+        </div>
+
+        <div className="field">
           <label htmlFor="password">Password</label>
           <div className="input-wrap">
             <input
@@ -164,8 +254,16 @@ export default function CreateAccount(): React.ReactElement {
           {errors.confirmPassword && <div className="error show">{errors.confirmPassword}</div>}
         </div>
 
+        {errors.form && (
+          <div className="error show" role="alert">
+            {errors.form}
+          </div>
+        )}
+
         <div className="actions">
-          <button className="btn primary" type="submit">Create account</button>
+          <button className="btn primary" type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Creating account...' : 'Create account'}
+          </button>
         </div>
       </form>
 

@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { canLogin, type LoginErrors } from './auth';
+import {
+  ApiError,
+  loginUser,
+  persistAuthSession,
+  getStoredAuthSession,
+  validateEmail,
+  type LoginErrors
+} from './auth';
 import './Login.css';
 
 type LoginProps = {
@@ -13,6 +20,7 @@ export default function Login({ onSuccess }: LoginProps): React.ReactElement {
   const [remember, setRemember] = useState<boolean>(false);
   const [showPass, setShowPass] = useState<boolean>(false);
   const [errors, setErrors] = useState<LoginErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,12 +36,60 @@ export default function Login({ onSuccess }: LoginProps): React.ReactElement {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
+  useEffect(() => {
+    const session = getStoredAuthSession();
+    if (session) {
+      if (typeof onSuccess === 'function') {
+        onSuccess();
+      } else {
+        navigate('/calendar');
+      }
+    }
+  }, [navigate, onSuccess]);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
-    const res = canLogin(email, password);
-    setErrors(res.errors);
-    if (!res.ok) return;
-    redirect();
+
+    const validation: LoginErrors = {};
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!validateEmail(trimmedEmail)) {
+      validation.email = 'Please enter a valid email.';
+    }
+
+    if (trimmedPassword.length < 6) {
+      validation.password = 'Password must be at least 6 characters.';
+    }
+
+    if (Object.keys(validation).length > 0) {
+      setErrors(validation);
+      return;
+    }
+
+    setErrors({});
+    setIsSubmitting(true);
+
+    try {
+      const session = await loginUser(trimmedEmail, trimmedPassword);
+      persistAuthSession(session, remember);
+      redirect();
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const fieldErrors = err.fieldErrors ?? {};
+        const nextErrors: LoginErrors = {};
+
+        if (fieldErrors.email) nextErrors.email = fieldErrors.email;
+        if (fieldErrors.password) nextErrors.password = fieldErrors.password;
+        nextErrors.auth = fieldErrors.auth ?? fieldErrors.form ?? err.message;
+
+        setErrors(nextErrors);
+      } else {
+        setErrors({ auth: 'Unable to sign in right now. Please try again.' });
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -130,7 +186,9 @@ export default function Login({ onSuccess }: LoginProps): React.ReactElement {
         </div>
 
         <div className="actions">
-          <button className="btn primary" type="submit">Sign in</button>
+          <button className="btn primary" type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Signing in...' : 'Sign in'}
+          </button>
         </div>
 
         <div className="account-footer">
