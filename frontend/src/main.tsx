@@ -5,6 +5,7 @@ import Calendar from './Calender/Calender'
 import Login from './Login/Login'
 import CreateAccount from './Login/CreateAccount'
 import ForgotPassword from './Login/ForgotPassword'
+import ResetPassword from './Login/ResetPassword'
 import AdminDashboard from './Admin/Admin'
 import { AccountButton } from './components/AccountButton'
 import { RequireAuth } from './Login/RequireAuth'
@@ -25,6 +26,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 
         {/* Forgot password */}
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* Full-page calendar route */}
         <Route

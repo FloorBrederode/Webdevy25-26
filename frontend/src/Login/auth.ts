@@ -51,6 +51,14 @@ export async function registerUser(payload: RegisterPayload): Promise<AuthSessio
   return mapAuthPayload(response, payload.email);
 }
 
+export async function requestPasswordReset(email: string): Promise<void> {
+  await postJson('/auth/forgot-password', { email });
+}
+
+export async function resetPassword(token: string, password: string): Promise<void> {
+  await postJson('/auth/reset-password', { token, password });
+}
+
 export function persistAuthSession(session: AuthSession, remember: boolean): void {
   try {
     const serialized = JSON.stringify(session);

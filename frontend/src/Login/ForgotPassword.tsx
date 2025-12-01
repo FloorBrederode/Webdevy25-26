@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { validateEmail } from './auth';
+import { requestPasswordReset, validateEmail } from './auth';
 import {
   AccountFooter,
   AuthPage,
@@ -20,7 +20,7 @@ export default function ForgotPassword(): React.ReactElement {
     ? 'If we find a matching account, we will email password reset instructions.'
     : 'Please enter your email and we will send you password reset instructions.';
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
     const trimmedEmail = email.trim();
     if (!validateEmail(trimmedEmail)) {
@@ -28,10 +28,15 @@ export default function ForgotPassword(): React.ReactElement {
       return;
     }
 
-    setSubmittedEmail(trimmedEmail);
-    setSubmitted(true);
-    setError('');
-    // A real implementation would trigger an API call here.
+    try {
+      await requestPasswordReset(trimmedEmail);
+      setSubmittedEmail(trimmedEmail);
+      setSubmitted(true);
+      setError('');
+    } catch (err) {
+      console.error(err);
+      setError('Unable to process your request right now. Please try again.');
+    }
   };
 
   return (
@@ -60,7 +65,7 @@ type ResetRequestFormProps = {
   email: string;
   error?: string;
   onEmailChange: (value: string) => void;
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void | Promise<void>;
 };
 
 function ResetRequestForm({
