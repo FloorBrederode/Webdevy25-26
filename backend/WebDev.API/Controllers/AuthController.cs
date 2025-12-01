@@ -178,6 +178,7 @@ public sealed class AuthController : ControllerBase
             <p>If you did not request this, you can safely ignore this email.</p>
             """;
 
+
         try
         {
             await _emailSender.SendAsync(email, subject, body);
@@ -186,6 +187,7 @@ public sealed class AuthController : ControllerBase
         {
             _logger.LogError(ex, "Failed to send password reset email to {Email}. Link: {Link}", email, resetLink);
         }
+
     }
 
     private static string ResolveDisplayName(UserDto user, RegisterRequestDto? request = null)
