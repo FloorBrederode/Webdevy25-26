@@ -43,4 +43,5 @@ backend/obj/Debug/net9.0/webdev.AssemblyInfoInputs.cache
 
 # App settings
 backend/appsettings/
-backend/appsettings*.json
+backend/appsettings.json
+backend/appsettings.Development.json
