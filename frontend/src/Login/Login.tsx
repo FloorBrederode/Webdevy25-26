@@ -4,6 +4,7 @@ import {
   ApiError,
   loginUser,
   persistAuthSession,
+  getStoredAuthSession,
   validateEmail,
   type LoginErrors
 } from './auth';
@@ -34,6 +35,17 @@ export default function Login({ onSuccess }: LoginProps): React.ReactElement {
       navigate('/calendar');
     }
   };
+
+  useEffect(() => {
+    const session = getStoredAuthSession();
+    if (session) {
+      if (typeof onSuccess === 'function') {
+        onSuccess();
+      } else {
+        navigate('/calendar');
+      }
+    }
+  }, [navigate, onSuccess]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();

@@ -65,6 +65,42 @@ export function persistAuthSession(session: AuthSession, remember: boolean): voi
   }
 }
 
+export function getStoredAuthSession(): AuthSession | null {
+  try {
+    const raw = sessionStorage.getItem(AUTH_STORAGE_KEY) ?? localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as Partial<AuthSession>;
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+
+    if (!parsed.expiresAt || Number.isNaN(Date.parse(parsed.expiresAt))) {
+      return null;
+    }
+
+    if (Date.parse(parsed.expiresAt) <= Date.now()) {
+      clearAuthSession();
+      return null;
+    }
+
+    if (!parsed.id || !parsed.name || !parsed.email || !parsed.role || !parsed.token) {
+      return null;
+    }
+
+    return {
+      id: parsed.id,
+      name: parsed.name,
+      email: parsed.email,
+      role: parsed.role,
+      token: parsed.token,
+      expiresAt: parsed.expiresAt
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function clearAuthSession(): void {
   try {
     localStorage.removeItem(AUTH_STORAGE_KEY);
