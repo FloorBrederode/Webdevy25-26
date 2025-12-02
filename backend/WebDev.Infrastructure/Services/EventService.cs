@@ -25,14 +25,12 @@ public sealed class EventService : IEventService
             throw new ArgumentOutOfRangeException(nameof(userId), "User id must be positive.");
         }
 
-        var events = await _context.Events
+        return await _context.Events
             .AsNoTracking()
-            .ToListAsync();
-
-        return events
-            .Where(e => IsUserParticipant(e, userId))
+            .Include(e => e.Attendees)
+            .Where(e => e.OrganizerId == userId || e.Attendees.Any(a => a.UserId == userId))
             .OrderBy(e => e.StartTime)
-            .ToList();
+            .ToListAsync();
     }
 
     public async Task<IReadOnlyList<Event>> GetEventsByUserAndDateAsync(int userId, DateTime date)
@@ -45,15 +43,13 @@ public sealed class EventService : IEventService
         var dayStart = date.Date;
         var dayEnd = dayStart.AddDays(1);
 
-        var events = await _context.Events
+        return await _context.Events
             .AsNoTracking()
+            .Include(e => e.Attendees)
             .Where(e => e.StartTime < dayEnd && e.EndTime > dayStart)
-            .ToListAsync();
-
-        return events
-            .Where(e => IsUserParticipant(e, userId))
+            .Where(e => e.OrganizerId == userId || e.Attendees.Any(a => a.UserId == userId))
             .OrderBy(e => e.StartTime)
-            .ToList();
+            .ToListAsync();
     }
 
     public async Task<IReadOnlyList<Event>> GetEventsByUserAndDateRangeAsync(int userId, DateTime startDate, DateTime endDate)
@@ -68,27 +64,15 @@ public sealed class EventService : IEventService
             throw new ArgumentException("Start date must not be after end date.");
         }
 
-        var results = new List<Event>();
-        var seenEventIds = new HashSet<int>();
+        var rangeStart = startDate.Date;
+        var rangeEndExclusive = endDate.Date.AddDays(1);
 
-        for (var currentDate = startDate.Date; currentDate <= endDate.Date; currentDate = currentDate.AddDays(1))
-        {
-            var eventsForDay = await GetEventsByUserAndDateAsync(userId, currentDate);
-
-            foreach (var evt in eventsForDay)
-            {
-                if (seenEventIds.Add(evt.Id))
-                {
-                    results.Add(evt);
-                }
-            }
-        }
-
-        return results
+        return await _context.Events
+            .AsNoTracking()
+            .Include(e => e.Attendees)
+            .Where(e => e.StartTime < rangeEndExclusive && e.EndTime > rangeStart)
+            .Where(e => e.OrganizerId == userId || e.Attendees.Any(a => a.UserId == userId))
             .OrderBy(e => e.StartTime)
-            .ToList();
+            .ToListAsync();
     }
-
-    private static bool IsUserParticipant(Event evt, int userId) =>
-        evt.OrganizerId == userId || evt.AttendeeIds.Contains(userId);
 }

@@ -9,7 +9,7 @@ from pathlib import Path
 
 import bcrypt
 
-DB_PATH = "database.db"
+DB_PATH = Path(__file__).resolve().parent / "database.db"
 
 COMPANIES = [
     {
@@ -209,6 +209,7 @@ def build_teams(company_users):
 
 def build_events(company_users, company_rooms):
     events = []
+    attendee_rows = []
     base_start = datetime(2025, 4, 1, 9, 0, 0)
     random.seed(84)
     for idx in range(1, EVENT_COUNT + 1):
@@ -220,8 +221,8 @@ def build_events(company_users, company_rooms):
         pool_users = company_users[company_id]
         pool_rooms = company_rooms[company_id]
         attendee_count = 5 + (idx % 4)  # between 5 and 8 attendees
-        attendees = random.sample(pool_users, attendee_count)
-        organizer_id = random.choice(attendees)
+        attendee_ids = random.sample(pool_users, attendee_count)
+        organizer_id = random.choice(attendee_ids)
         room_sample_size = 1 if idx % 3 else 2
         rooms = random.sample(pool_rooms, room_sample_size)
         description = COMPANY_META[company_id]["event_desc"]
@@ -234,11 +235,11 @@ def build_events(company_users, company_rooms):
                 description,
                 name,
                 organizer_id,
-                json.dumps(sorted(attendees)),
                 json.dumps(sorted(rooms)),
             )
         )
-    return events
+        attendee_rows.extend((idx, user_id) for user_id in attendee_ids)
+    return events, attendee_rows
 
 
 def write_password_report(credentials):
@@ -252,13 +253,13 @@ def main():
     users, company_users, credentials = build_users()
     rooms, company_rooms = build_rooms()
     teams = build_teams(company_users)
-    events = build_events(company_users, company_rooms)
+    events, attendees = build_events(company_users, company_rooms)
 
     conn = sqlite3.connect(DB_PATH)
     conn.execute("PRAGMA foreign_keys = ON;")
     cur = conn.cursor()
     cur.execute("BEGIN;")
-    for table in ("event", "team", "room", "user", "company"):
+    for table in ("attendee", "event", "team", "room", "user", "company"):
         cur.execute(f"DELETE FROM {table};")
 
     cur.executemany(
@@ -284,10 +285,14 @@ def main():
     cur.executemany(
         """
         INSERT INTO event
-        (id, start_time, end_time, description, name, organizer_id, attendee_ids, room_ids)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        (id, start_time, end_time, description, name, organizer_id, room_ids)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
         events,
+    )
+    cur.executemany(
+        "INSERT INTO attendee (event_id, user_id) VALUES (?, ?)",
+        attendees,
     )
     conn.commit()
     conn.close()

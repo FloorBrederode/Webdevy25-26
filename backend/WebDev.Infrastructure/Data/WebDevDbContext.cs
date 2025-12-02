@@ -36,6 +36,7 @@ public class WebDevDbContext : DbContext
     public DbSet<Room> Rooms => Set<Room>();
     public DbSet<Event> Events => Set<Event>();
     public DbSet<Team> Teams => Set<Team>();
+    public DbSet<Attendee> Attendees => Set<Attendee>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -46,6 +47,7 @@ public class WebDevDbContext : DbContext
         ConfigureRoom(builder);
         ConfigureTeam(builder);
         ConfigureEvent(builder);
+        ConfigureAttendee(builder);
     }
 
     private static void ConfigureCompany(ModelBuilder builder)
@@ -149,12 +151,6 @@ public class WebDevDbContext : DbContext
             entity.HasIndex(e => e.OrganizerId).HasDatabaseName("idx_event_organizer");
             entity.HasIndex(e => e.StartTime).HasDatabaseName("idx_event_start_time");
 
-            entity.Property(e => e.AttendeeIds)
-                .HasColumnName("attendee_ids")
-                .HasConversion(IntListConverter);
-
-            entity.Property(e => e.AttendeeIds).Metadata.SetValueComparer(IntListComparer);
-
             entity.Property(e => e.RoomIds)
                 .HasColumnName("room_ids")
                 .HasConversion(IntListConverter);
@@ -165,6 +161,32 @@ public class WebDevDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.OrganizerId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasMany(e => e.Attendees)
+                .WithOne(a => a.Event)
+                .HasForeignKey(a => a.EventId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureAttendee(ModelBuilder builder)
+    {
+        builder.Entity<Attendee>(entity =>
+        {
+            entity.ToTable("attendee");
+            entity.HasKey(a => a.Id);
+
+            entity.Property(a => a.Id).HasColumnName("attendence_id");
+            entity.Property(a => a.EventId).HasColumnName("event_id").IsRequired();
+            entity.Property(a => a.UserId).HasColumnName("user_id").IsRequired();
+
+            entity.HasIndex(a => a.EventId).HasDatabaseName("idx_attendee_event");
+            entity.HasIndex(a => a.UserId).HasDatabaseName("idx_attendee_user");
+
+            entity.HasOne(a => a.User)
+                .WithMany()
+                .HasForeignKey(a => a.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 

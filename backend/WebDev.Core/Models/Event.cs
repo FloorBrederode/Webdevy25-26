@@ -12,6 +12,6 @@ public sealed class Event
     public DateTime EndTime { get; set; }
     public int? OrganizerId { get; set; }
     public User? Organizer { get; set; } //EF ref
-    public List<int> AttendeeIds { get; set; } = new();
     public List<int> RoomIds { get; set; } = new();
+    public List<Attendee> Attendees { get; set; } = new();
 }
