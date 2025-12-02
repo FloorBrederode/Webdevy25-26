@@ -10,14 +10,13 @@ namespace WebDev.API.Controllers.Users;
 public class UserUpdateController : ControllerBase
 {
     private readonly IUserService _userService;
-    private readonly ILogger<UserUpdateController> _logger;
 
-    public UserUpdateController(
-        IUserService userService,
-        ILogger<UserUpdateController> logger)
+
+
+
+    public UserUpdateController(IUserService userService)
     {
         _userService = userService;
-        _logger = logger;
     }
 
 

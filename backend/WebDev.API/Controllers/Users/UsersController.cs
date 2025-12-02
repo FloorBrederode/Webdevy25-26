@@ -10,14 +10,10 @@ namespace WebDev.API.Controllers.Users;
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
-    private readonly ILogger<UsersController> _logger;
 
-    public UsersController(
-        IUserService userService,
-        ILogger<UsersController> logger)
+    public UsersController(IUserService userService)
     {
         _userService = userService;
-        _logger = logger;
     }
 
     // Get full user info

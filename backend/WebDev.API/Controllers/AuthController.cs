@@ -16,22 +16,21 @@ public sealed class AuthController : ControllerBase
     private readonly IPasswordResetStore _passwordResetStore;
     private readonly IEmailSender _emailSender;
     private readonly FrontendOptions _frontendOptions;
-    private readonly ILogger<AuthController> _logger;
+
+
 
     public AuthController(
         IUserService userService,
         IJwtTokenGenerator tokenGenerator,
         IPasswordResetStore passwordResetStore,
         IEmailSender emailSender,
-        IOptions<FrontendOptions> frontendOptions,
-        ILogger<AuthController> logger)
+        IOptions<FrontendOptions> frontendOptions)
     {
         _userService = userService;
         _tokenGenerator = tokenGenerator;
         _passwordResetStore = passwordResetStore;
         _emailSender = emailSender;
         _frontendOptions = frontendOptions.Value;
-        _logger = logger;
     }
 
     [HttpPost("login")]
@@ -192,9 +191,9 @@ public sealed class AuthController : ControllerBase
         {
             await _emailSender.SendAsync(email, subject, body);
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            _logger.LogError(ex, "Failed to send password reset email to {Email}. Link: {Link}", email, resetLink);
+            System.Console.WriteLine(e);
         }
 
     }
