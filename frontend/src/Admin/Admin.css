@@ -148,3 +148,63 @@
     color: #cbd5e1;
     text-decoration: underline;
 }
+
+.admin-main {
+  padding: 20px;
+}
+
+/* Flex layout for main content */
+.main-grid {
+  display: flex;
+  gap: 20px;
+}
+
+/* Left panel: Recent Activity */
+.left-panel {
+  flex: 2;
+  background-color: #f9f9f9;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Right panel: User Info */
+.right-panel {
+  flex: 1;
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.user-info p {
+  margin: 10px 0;
+}
+
+/* Responsive layout: stack panels vertically on small screens */
+@media (max-width: 768px) {
+  .main-grid {
+    flex-direction: column;
+  }
+
+  .left-panel,
+  .right-panel {
+    flex: unset;
+    width: 100%;
+  }
+}
+
+.nav-button {
+  display: inline-block;
+  padding: 6px 12px;
+  background-color: #007bff;
+  color: white;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.nav-button:hover {
+  background-color: #0056b3;
+}
