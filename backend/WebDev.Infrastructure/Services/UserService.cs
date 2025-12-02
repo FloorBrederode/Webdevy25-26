@@ -147,4 +147,95 @@ public sealed class UserService : IUserService
         CompanyId = user.CompanyId,
         CompanyName = user.Company?.Name
     };
+
+    public async Task<List<UserDto>> GetAllUsersAsync()
+    {
+        var users = await _context.Users
+            .Include(u => u.Company)
+            .AsNoTracking()
+            .ToListAsync();
+
+        var userDtos = new List<UserDto>();
+        foreach (var user in users)
+        {
+            userDtos.Add(MapToDto(user));
+        }
+
+        return userDtos;
+    }
+
+    public async Task<UserDto?> GetUserByIdAsync(int userId)
+    {
+        var user = await _context.Users
+            .Include(u => u.Company)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        return user is null ? null : MapToDto(user);
+    }
+
+    public async Task<bool> UpdateNameAsync(int userId, string newName)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null)
+        {
+            return false;
+        }
+
+        user.Name = newName.Trim();
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> UpdateEmailAsync(int userId, string newEmail)
+    {
+        var normalizedEmail = NormalizeEmail(newEmail);
+
+        var emailExists = await _context.Users
+            .AsNoTracking()
+            .AnyAsync(u => u.Email.ToLower() == normalizedEmail && u.Id != userId);
+
+        if (emailExists)
+        {
+            return false;
+        }
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null)
+        {
+            return false;
+        }
+
+        user.Email = normalizedEmail;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> UpdatePasswordAsync(int userId, string newPassword)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null)
+        {
+            return false;
+        }
+
+        user.PasswordHash = BCryptNet.HashPassword(newPassword, workFactor: 12);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> DeleteUserAsync(int userId)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null)
+        {
+            return false;
+        }
+
+        _context.Users.Remove(user);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    
 }
