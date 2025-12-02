@@ -54,3 +54,21 @@ public sealed class RegisterResponseDto
     public required string Token { get; init; }
     public required DateTime ExpiresAt { get; init; }
 }
+
+public sealed class ForgotPasswordRequestDto
+{
+    [Required]
+    [EmailAddress]
+    public required string Email { get; init; }
+}
+
+public sealed class ResetPasswordRequestDto
+{
+    [Required]
+    public required string Token { get; init; }
+
+    [Required]
+    [DataType(DataType.Password)]
+    [MinLength(6)]
+    public required string Password { get; init; }
+}

@@ -94,6 +94,46 @@ public sealed class UserService : IUserService
         return (true, Array.Empty<string>());
     }
 
+    public async Task<UserDto?> FindByEmailAsync(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return null;
+        }
+
+        var normalizedEmail = NormalizeEmail(email);
+
+        var user = await _context.Users
+            .Include(u => u.Company)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
+
+        return user is null ? null : MapToDto(user);
+    }
+
+    public async Task<bool> UpdatePasswordAsync(string userId, string newPassword)
+    {
+        if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(newPassword))
+        {
+            return false;
+        }
+
+        if (!int.TryParse(userId, out var parsedId))
+        {
+            return false;
+        }
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == parsedId);
+        if (user is null)
+        {
+            return false;
+        }
+
+        user.PasswordHash = BCryptNet.HashPassword(newPassword, workFactor: 12);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
     private static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();
 
     private static UserDto MapToDto(User user) => new()
