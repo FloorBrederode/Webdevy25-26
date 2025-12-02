@@ -401,3 +401,6 @@ C:\Users\brede\Documents\GitHub\Webdevy25-26\backend\obj\Debug\net9.0\refint\web
 C:\Users\brede\Documents\GitHub\Webdevy25-26\backend\obj\Debug\net9.0\webdev.pdb
 C:\Users\brede\Documents\GitHub\Webdevy25-26\backend\obj\Debug\net9.0\webdev.genruntimeconfig.cache
 C:\Users\brede\Documents\GitHub\Webdevy25-26\backend\obj\Debug\net9.0\ref\webdev.dll
+C:\Users\brede\Documents\GitHub\Webdevy25-26\backend\bin\Debug\net9.0\package-lock.json
+C:\Users\brede\Documents\GitHub\Webdevy25-26\backend\bin\Debug\net9.0\runtimes\linux-musl-riscv64\native\libe_sqlite3.so
+C:\Users\brede\Documents\GitHub\Webdevy25-26\backend\bin\Debug\net9.0\runtimes\linux-riscv64\native\libe_sqlite3.so

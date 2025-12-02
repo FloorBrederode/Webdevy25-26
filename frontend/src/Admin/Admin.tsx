@@ -1,47 +1,31 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+// import { Link } from "react-router-dom";
+import EventsTab from "./Components/EventsTab";
 import "./Admin.css";
+import { AddEventForm } from "./Components/AddEvent";
+import ActivityFeed from "./Components/ActivityFeed";
 
-type StatCardProps = {
-  title: string;
-  value: string;
-  onClick?: () => void;
+
+// Mock user data; replace with real auth logic
+type User = {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
 };
 
-function StatCard({ title, value, onClick }: StatCardProps) {
-  return (
-    <div className="stat-card" onClick={onClick}>
-      <h3>{title}</h3>
-      <p>{value}</p>
-    </div>
-  );
-}
-
-type ActivityFeedProps = {
-  activities: string[];
+const user: User = {
+  id: 1,
+  name: "Floor",
+  email: "floor@company.com",
+  role: "admin",
 };
-
-function ActivityFeed({ activities }: ActivityFeedProps) {
-  return (
-    <div className="activity-feed">
-      <h2>Recent Activity</h2>
-      <ul>
-        {activities.map((activity, index) => (
-          <li key={index}>{activity}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
 
 export default function AdminDashboard() {
   const [dateTime, setDateTime] = useState(new Date());
-  const [stats] = useState({
-    events: "2 upcoming",
-    teams: "4 active",
-    rooms: "1 booked",
-    tasks: "5 pending",
-  });
+  const [activeTab, setActiveTab] = useState<
+    "main" | "teams" | "events" | "rooms" | "tasks" | "settings"
+  >("main");
 
   const [activities] = useState<string[]>([
     "New event 'Workshop' added for Sept 20",
@@ -50,52 +34,128 @@ export default function AdminDashboard() {
     "3 attendees signed up for 'Team Meeting'",
   ]);
 
+  const [userTeams] = useState([
+    { id: 1, name: "Team Alpha" },
+    { id: 2, name: "Team Beta" },
+    { id: 3, name: "Team Gamma" },
+  ]);
+
   useEffect(() => {
     const interval = setInterval(() => setDateTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  const handleNavigate = (page: string) => {
-    alert(`This would navigate to: ${page}`);
-  };
+  const handleTabClick = (tab: typeof activeTab) => setActiveTab(tab);
 
   return (
     <div className="admin-dashboard">
       {/* Header */}
       <header className="admin-header">
-        {/* Left side: return link */}
-        <Link to="/calendar" className="return-link">
-          ← Return to Calendar
-        </Link>
+        <button
+          className={`return-link ${activeTab === "main" ? "active" : ""}`}
+          onClick={() => handleTabClick("main")}
+        >
+          ← Return to Dashboard
+        </button>
 
-        {/* Center: title */}
         <h1>Welcome, Admin</h1>
 
-        {/* Navigation */}
         <nav className="admin-nav">
-          <button onClick={() => handleNavigate("events")}>Events</button>
-          <button onClick={() => handleNavigate("teams")}>Teams</button>
-          <button onClick={() => handleNavigate("rooms")}>Rooms</button>
-          <button onClick={() => handleNavigate("tasks")}>Tasks</button>
-          <button onClick={() => handleNavigate("settings")}>Settings</button>
+          <button
+            className={activeTab === "main" ? "active" : ""}
+            onClick={() => handleTabClick("main")}
+          >
+            Home
+          </button>
+          <button
+            className={activeTab === "events" ? "active" : ""}
+            onClick={() => handleTabClick("events")}
+          >
+            Events
+          </button>
+          <button
+            className={activeTab === "teams" ? "active" : ""}
+            onClick={() => handleTabClick("teams")}
+          >
+            Teams
+          </button>
+          <button
+            className={activeTab === "rooms" ? "active" : ""}
+            onClick={() => handleTabClick("rooms")}
+          >
+            Rooms
+          </button>
+          <button
+            className={activeTab === "tasks" ? "active" : ""}
+            onClick={() => handleTabClick("tasks")}
+          >
+            Tasks
+          </button>
+          <button
+            className={activeTab === "settings" ? "active" : ""}
+            onClick={() => handleTabClick("settings")}
+          >
+            Settings
+          </button>
         </nav>
 
-        {/* Right side: live clock */}
         <div className="admin-clock">{dateTime.toLocaleString()}</div>
       </header>
 
-      {/* Main */}
       <main className="admin-main">
-        <div className="stat-grid">
-          <StatCard title="Events" value={stats.events} />
-          <StatCard title="Teams" value={stats.teams} />
-          <StatCard title="Rooms" value={stats.rooms} />
-          <StatCard title="Tasks" value={stats.tasks} />
-          <StatCard title="Settings" value="Manage system" />
-        </div>
+        {/* Main content */}
+        {activeTab === "main" && (
+          <div className="main-grid">
+            {/* Left Panel */}
+            <div className="left-panel">
+              <ActivityFeed activities={activities} />
+            </div>
 
-        <ActivityFeed activities={activities} />
+            {/* Right Panel */}
+            <div className="right-panel">
+              {/* Add Event Block */}
+              <div className="add-event-block">
+                <h2>Add Event</h2>
+                <AddEventForm userId={user?.id} />
+              </div>
+
+              {/* User Info Block */}
+              <div className="user-info-block">
+                <h2>Your Info</h2>
+                {user ? (
+                  <div className="user-info">
+                    <p><strong>User ID:</strong> {user.id}</p>
+                    <p><strong>Name:</strong> {user.name}</p>
+                    <p><strong>Email:</strong> {user.email}</p>
+                    <p><strong>Role:</strong> {user.role}</p>
+                  </div>
+                ) : (
+                  <p>Loading user info...</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+
+        {activeTab === "teams" && (
+          <div className="teams-page">
+            <h2>Your Teams</h2>
+            <ul>
+              {userTeams.map(team => (
+                <li key={team.id}>{team.name}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Render the separate EventsTab */}
+        {activeTab === "events" && <EventsTab />}
+
+        {activeTab === "rooms" && <div><h2>Rooms Page (fetch from DB)</h2></div>}
+        {activeTab === "tasks" && <div><h2>Tasks Page (fetch from DB)</h2></div>}
+        {activeTab === "settings" && <div><h2>Settings Page</h2></div>}
       </main>
-    </div>
+    </div >
   );
 }
