@@ -16,7 +16,6 @@ function getSessionSnapshot(): SessionSnapshot | null {
   const validated = getStoredAuthSession();
   if (validated) return validated;
 
-  // Fallback: read raw value to still show the name if validation failed.
   try {
     const raw = sessionStorage.getItem('authSession') ?? localStorage.getItem('authSession');
     if (!raw) return null;

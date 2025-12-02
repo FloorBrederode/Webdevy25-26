@@ -1,4 +1,6 @@
+namespace WebDev.Core.Interfaces;
+
 public interface IOpenaiConnector
 {
-    public async Task<string> AskGPT();
+    Task<string> AskGPT(int userId);
 }

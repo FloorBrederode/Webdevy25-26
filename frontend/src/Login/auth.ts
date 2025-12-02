@@ -114,7 +114,7 @@ export function clearAuthSession(): void {
     localStorage.removeItem(AUTH_STORAGE_KEY);
     sessionStorage.removeItem(AUTH_STORAGE_KEY);
   } catch {
-    // Ignore storage failures.
+    // voor als er errors zijn zeg maar
   }
 }
 

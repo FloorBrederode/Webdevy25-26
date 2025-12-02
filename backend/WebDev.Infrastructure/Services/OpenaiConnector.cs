@@ -1,10 +1,17 @@
+using System;
+using System.Linq;
+using System.Net;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 using Microsoft.Extensions.Options;
 using WebDev.API.Configuration;
-using System.Net.Http.Headers;
+using WebDev.Core.Interfaces;
+using WebDev.Core.Models;
 
 namespace WebDev.Infrastructure.Services;
 
-public sealed class OpenaiConnector
+public sealed class OpenaiConnector : IOpenaiConnector
 {
     private const string _prompt = @"
 You are a professional productivity assistant that generates a clear, concise weekly overview based on a user’s calendar for one specific week.
@@ -99,26 +106,98 @@ Use that schedule to produce the markdown output exactly as specified above.";
 
     private static readonly HttpClient _client = new HttpClient();
     private readonly OpenaiOptions _options;
-
-    public OpenaiConnector(IOptions<OpenaiOptions> options)
+    private readonly IEventService _eventService;
+    public OpenaiConnector(IOptions<OpenaiOptions> options, IEventService eventService)
     {
+        _eventService = eventService;
+
         _options = options.Value;
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiKey);
-        _client.DefaultRequestHeaders.Add("Content-Type", "application/json");
+        if (!string.IsNullOrWhiteSpace(_options.ApiKey))
+        {
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiKey);
+        }
     }
 
-    public async Task<string> askGPT(string input)
+    public async Task<string> AskGPT(int userId)
     {
-        var p = _prompt;
-        p += "\n\n" + input.ToString();
+        if (string.IsNullOrWhiteSpace(_options.ConnectionLink))
+        {
+            throw new InvalidOperationException("OpenAI connection link is not configured.");
+        }
 
-        System.Console.WriteLine(p);
+        if (string.IsNullOrWhiteSpace(_options.ApiKey))
+        {
+            throw new InvalidOperationException("OpenAI API key is not configured.");
+        }
 
-        var content = new StringContent(p);
-        
-        System.Console.WriteLine(content);
-        // var response = await _client.PostAsync(_options.ConnectionLink, content);
+        var start = DateTime.UtcNow.Date;
+        var end = start.AddDays(7);
+        var events = await _eventService.GetEventsByUserAndDateRangeAsync(userId, start, end);
 
-        return null;
+        var scheduleSection = BuildScheduleSection(start, end, events);
+        var prompt = $"{_prompt}\n\n{scheduleSection}";
+
+        var model = string.IsNullOrWhiteSpace(_options.Model) ? "gpt-4o-mini" : _options.Model;
+        var payload = JsonSerializer.Serialize(new
+        {
+            model,
+            input = prompt
+        });
+        using var content = new StringContent(payload, Encoding.UTF8, "application/json");
+        var response = await _client.PostAsync(_options.ConnectionLink, content);
+
+        if (response.StatusCode == HttpStatusCode.TooManyRequests)
+        {
+            var detail = await response.Content.ReadAsStringAsync();
+            var limitInfo = string.Join(
+                "; ",
+                new[]
+                {
+                    ReadHeader(response, "x-ratelimit-limit-requests"),
+                    ReadHeader(response, "x-ratelimit-remaining-requests"),
+                    ReadHeader(response, "x-ratelimit-reset-requests")
+                }.Where(v => !string.IsNullOrWhiteSpace(v)));
+
+            var message = string.IsNullOrWhiteSpace(limitInfo)
+                ? $"OpenAI rate limit hit: {detail}"
+                : $"OpenAI rate limit hit: {detail} ({limitInfo})";
+
+            throw new HttpRequestException(message, null, response.StatusCode);
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var detail = await response.Content.ReadAsStringAsync();
+            throw new HttpRequestException($"OpenAI request failed ({(int)response.StatusCode}): {detail}", null, response.StatusCode);
+        }
+
+        return await response.Content.ReadAsStringAsync();
     }
+
+    private static string BuildScheduleSection(DateTime start, DateTime end, IReadOnlyCollection<Event> events)
+    {
+        var builder = new StringBuilder();
+        builder.AppendLine($"Week: {start:yyyy-MM-dd} to {end:yyyy-MM-dd}");
+        builder.AppendLine("Timezone: UTC");
+        builder.AppendLine("Schedule:");
+
+        if (events.Count == 0)
+        {
+            builder.AppendLine("No events scheduled.");
+            return builder.ToString();
+        }
+
+        foreach (var evt in events.OrderBy(e => e.StartTime))
+        {
+            var description = string.IsNullOrWhiteSpace(evt.Description) ? string.Empty : $" - {evt.Description}";
+            builder.AppendLine($"- {evt.StartTime:u} to {evt.EndTime:u} | {evt.Name}{description}");
+        }
+
+        return builder.ToString();
+    }
+
+    private static string ReadHeader(HttpResponseMessage response, string headerName) =>
+        response.Headers.TryGetValues(headerName, out var values)
+            ? $"{headerName}: {values.FirstOrDefault()}"
+            : string.Empty;
 }

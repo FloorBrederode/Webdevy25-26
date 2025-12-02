@@ -38,11 +38,14 @@ static void ConfigureServices(IServiceCollection services, ConfigurationManager 
     services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
     services.Configure<SmtpOptions>(configuration.GetSection("Smtp"));
     services.Configure<FrontendOptions>(configuration.GetSection("Frontend"));
+    services.Configure<OpenaiOptions>(configuration.GetSection("Openai"));
 
     var connectionString = ResolveConnectionString(configuration, environment);
     services.AddDbContext<WebDevDbContext>(options => options.UseSqlite(connectionString));
 
     services.AddScoped<IUserService, UserService>();
+    services.AddScoped<IEventService, EventService>();
+    services.AddScoped<IOpenaiConnector, OpenaiConnector>();
     services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
     services.AddScoped<IRoomAvailabilityService, RoomAvailabilityService>();
     services.AddSingleton<IPasswordResetStore, InMemoryPasswordResetStore>();
@@ -56,6 +59,8 @@ static void ConfigureServices(IServiceCollection services, ConfigurationManager 
             {
                 options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
             });
+    services.AddEndpointsApiExplorer();
+    services.AddSwaggerGen();
 
     // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
     services.AddOpenApi();
@@ -102,6 +107,8 @@ static void ConfigureMiddleware(WebApplication app)
     if (app.Environment.IsDevelopment())
     {
         app.MapOpenApi();
+        app.UseSwagger();
+        app.UseSwaggerUI();
     }
 
     app.UseHttpsRedirection();
