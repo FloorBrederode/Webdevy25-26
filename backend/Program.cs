@@ -47,6 +47,8 @@ static void ConfigureServices(IServiceCollection services, ConfigurationManager 
     services.AddScoped<IRoomAvailabilityService, RoomAvailabilityService>();
     services.AddSingleton<IPasswordResetStore, InMemoryPasswordResetStore>();
     services.AddScoped<IEmailSender, SmtpEmailSender>();
+    services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+
 
     ConfigureAuthentication(services, configuration);
 
