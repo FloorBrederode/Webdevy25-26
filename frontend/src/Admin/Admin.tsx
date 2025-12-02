@@ -4,22 +4,27 @@ import EventsTab from "./Components/EventsTab";
 import "./Admin.css";
 import { AddEventForm } from "./Components/AddEvent";
 import ActivityFeed from "./Components/ActivityFeed";
+import { getStoredAuthSession } from "../Login/auth";
 
+// find user from session or api
+getStoredAuthSession();
+const user = getStoredAuthSession();
 
-// Mock user data; replace with real auth logic
-type User = {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-};
+// type User = {
+//   id: number;
+//   name: string;
+//   email: string;
+//   role: "admin" | "user";
+// };
 
-const user: User = {
-  id: 1,
-  name: "Floor",
-  email: "floor@company.com",
-  role: "admin",
-};
+// mock user
+// const user: User = {
+//   id: 1,
+//   name: "Floor",
+//   email: "floor@company.com",
+//   role: "admin",
+// };
+
 
 export default function AdminDashboard() {
   const [dateTime, setDateTime] = useState(new Date());
@@ -116,7 +121,8 @@ export default function AdminDashboard() {
               {/* Add Event Block */}
               <div className="add-event-block">
                 <h2>Add Event</h2>
-                <AddEventForm userId={user?.id} />
+                {/* is not working :( */}
+                {/* <AddEventForm userId={user?.id} /> */}
               </div>
 
               {/* User Info Block */}

@@ -5,7 +5,7 @@ type Room = {
   location: string;
 };
 
-// Organizer ID will be added automatically
+// user id is automatically the organizer id
 type AddEventFormProps = {
   userId: number; 
 };
