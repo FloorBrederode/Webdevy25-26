@@ -16,6 +16,49 @@ export type CalendarEvent = {
   attendeeIds: number[];
 };
 
+export function normalizeId(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string' && value.trim().length > 0) {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+export function normalizeIdArray(rawIds: unknown): number[] {
+  if (rawIds == null) return [];
+
+  const ids = typeof rawIds === 'string'
+    ? (() => {
+        try {
+          return JSON.parse(rawIds) as unknown[];
+        } catch {
+          return [];
+        }
+      })()
+    : rawIds;
+
+  if (!Array.isArray(ids)) return [];
+
+  return ids
+    .map((id) => normalizeId(id))
+    .filter((id): id is number => id != null);
+}
+
+export function extractUserId(user: any): number | null {
+  if (!user) return null;
+  return normalizeId(
+    user.id ??
+    user.Id ??
+    user.ID ??
+    user.userId ??
+    user.UserId ??
+    user.user_id
+  );
+}
+
 export async function getAvailableRooms(startIso: string, endIso: string, companyId?: number): Promise<Room[]> {
   const paramsObj: Record<string,string> = { startTime: startIso, endTime: endIso };
   if (companyId != null) paramsObj.companyId = String(companyId);
@@ -97,8 +140,12 @@ export async function getCurrentUser() {
   return res.json();
 }
 
-export async function getAllEvents(): Promise<CalendarEvent[]> {
-  const res = await fetch('/api/events', {
+export async function getAllEvents(userId?: number): Promise<CalendarEvent[]> {
+  const params = new URLSearchParams();
+  if (userId != null) params.set('userId', String(userId));
+  const endpoint = params.toString() ? `/api/events?${params.toString()}` : '/api/events';
+
+  const res = await fetch(endpoint, {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
   });
@@ -108,16 +155,21 @@ export async function getAllEvents(): Promise<CalendarEvent[]> {
   }
   const events = await res.json();
   // Convert room_ids and attendee_ids JSON strings to arrays; tolerate snake_case from backend
-  return events.map((e: any) => ({
-    id: e.id ?? e.id,
-    name: e.name ?? e.name,
-    description: e.description ?? e.description,
-    startTime: e.startTime ?? e.start_time,
-    endTime: e.endTime ?? e.end_time,
-    organizerId: e.organizerId ?? e.organizer_id,
-    roomIds: typeof (e.roomIds ?? e.room_ids) === 'string' ? JSON.parse(e.roomIds ?? e.room_ids) : (e.roomIds ?? e.room_ids ?? []),
-    attendeeIds: typeof (e.attendeeIds ?? e.attendee_ids) === 'string' ? JSON.parse(e.attendeeIds ?? e.attendee_ids) : (e.attendeeIds ?? e.attendee_ids ?? []),
-  }));
+  return events.map((e: any) => {
+    const roomIds = normalizeIdArray(e.roomIds ?? e.room_ids);
+    const attendeeIds = normalizeIdArray(e.attendeeIds ?? e.attendee_ids);
+
+    return {
+      id: normalizeId(e.id ?? e.ID ?? e.Id) ?? 0,
+      name: e.name ?? e.Name ?? '',
+      description: e.description ?? e.Description ?? null,
+      startTime: e.startTime ?? e.start_time,
+      endTime: e.endTime ?? e.end_time,
+      organizerId: normalizeId(e.organizerId ?? e.organizer_id),
+      roomIds,
+      attendeeIds,
+    };
+  });
 }
 
 export type CreateEventPayload = {

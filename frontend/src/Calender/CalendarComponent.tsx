@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Day from "./Day";
 import "./Calendar.css";
 import DayDetailView from "./DayDetailView";
-import { getAllEvents, type CalendarEvent } from "./bookingApi";
+import { getAllEvents, getCurrentUser, extractUserId, type CalendarEvent } from "./bookingApi";
 
 export type CalendarDate = {
   day: number;
@@ -34,6 +34,22 @@ export function generateCalendarDays(year: number, month: number): CalendarDate[
   return days;
 }
 
+const buildDateKey = (date: Date): string => {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
+
+const buildBookedDateMap = (events: CalendarEvent[]): Record<string, number> => {
+  const dateMap: Record<string, number> = {};
+
+  events.forEach((event) => {
+    const startDate = new Date(event.startTime);
+    const key = buildDateKey(startDate);
+    dateMap[key] = (dateMap[key] || 0) + 1;
+  });
+
+  return dateMap;
+};
+
 const CalendarComponent: React.FC = () => {
   const today = new Date();
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
@@ -41,33 +57,41 @@ const CalendarComponent: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [bookedDates, setBookedDates] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState<number | null>(null);
 
-  // Load events from database on component mount and when month/year changes
+  const refreshBookedDates = useCallback(async (participantId: number | null) => {
+    if (participantId == null) {
+      setBookedDates({});
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const events = await getAllEvents(participantId);
+      setBookedDates(buildBookedDateMap(events));
+    } catch (err) {
+      console.error('Failed to load events:', err);
+      setBookedDates({});
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     const loadEvents = async () => {
-      setLoading(true);
       try {
-        const events = await getAllEvents();
-        console.log('Loaded events from database:', events);
-        
-        // Build bookedDates map from loaded events
-        const dateMap: Record<string, number> = {};
-        events.forEach((event) => {
-          const startDate = new Date(event.startTime);
-          const key = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
-          dateMap[key] = (dateMap[key] || 0) + 1;
-        });
-        
-        setBookedDates(dateMap);
+        const current = await getCurrentUser();
+        const normalizedUserId = extractUserId(current);
+        setUserId(normalizedUserId);
+        await refreshBookedDates(normalizedUserId ?? null);
       } catch (err) {
         console.error('Failed to load events:', err);
-      } finally {
-        setLoading(false);
+        setBookedDates({});
       }
     };
 
     loadEvents();
-  }, []); // Only run once on mount - events update when BookingModal closes
+  }, [refreshBookedDates]); // Only run once on mount - events update when BookingModal closes
 
   const days = generateCalendarDays(currentYear, currentMonth);
 
@@ -116,6 +140,12 @@ const CalendarComponent: React.FC = () => {
         </div>
       </div>
 
+      {loading && (
+        <div style={{ marginBottom: '8px', color: '#555' }}>
+          Loading your events...
+        </div>
+      )}
+
       <div className="calendar-grid">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
           <div key={d} className="weekday">{d}</div>
@@ -140,20 +170,7 @@ const CalendarComponent: React.FC = () => {
           date={selectedDate}
           onClose={() => setSelectedDate(null)}
           onEventCreated={async () => {
-            // Reload events from database after event creation
-            try {
-              const events = await getAllEvents();
-              const dateMap: Record<string, number> = {};
-              events.forEach((event) => {
-                const startDate = new Date(event.startTime);
-                const key = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
-                dateMap[key] = (dateMap[key] || 0) + 1;
-              });
-              setBookedDates(dateMap);
-              console.log('Updated calendar events from database');
-            } catch (err) {
-              console.error('Failed to refresh events after booking:', err);
-            }
+            await refreshBookedDates(userId);
           }}
         />
       )}

@@ -168,7 +168,7 @@ namespace WebDev.API.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetAllEvents()
+        public IActionResult GetAllEvents([FromQuery] int? userId)
         {
             try
             {
@@ -178,11 +178,28 @@ namespace WebDev.API.Controllers
                 connection.Open();
 
                 using var cmd = connection.CreateCommand();
-                cmd.CommandText = @"
-                    SELECT id, name, description, start_time, end_time, organizer_id, attendee_ids, room_ids
-                    FROM event
-                    ORDER BY start_time ASC
-                ";
+                if (userId.HasValue)
+                {
+                    cmd.CommandText = @"
+                        SELECT id, name, description, start_time, end_time, organizer_id, attendee_ids, room_ids
+                        FROM event
+                        WHERE organizer_id = $userId
+                           OR EXISTS (
+                               SELECT 1 FROM json_each(attendee_ids)
+                               WHERE json_each.value = $userId
+                           )
+                        ORDER BY start_time ASC
+                    ";
+                    cmd.Parameters.AddWithValue("$userId", userId.Value);
+                }
+                else
+                {
+                    cmd.CommandText = @"
+                        SELECT id, name, description, start_time, end_time, organizer_id, attendee_ids, room_ids
+                        FROM event
+                        ORDER BY start_time ASC
+                    ";
+                }
 
                 using var reader = cmd.ExecuteReader();
                 while (reader.Read())
@@ -250,4 +267,3 @@ namespace WebDev.API.Controllers
         }
     }
 }
-

@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { getAllEvents, type CalendarEvent } from "./bookingApi";
+import React, { useCallback, useEffect, useState } from "react";
+import { getAllEvents, getCurrentUser, extractUserId, normalizeId, type CalendarEvent } from "./bookingApi";
 import { getStoredAuthSession } from '../Login/auth';
 import BookingModal from "./BookingModal";
 import "./Calendar.css";
-import { getCurrentUser } from "./bookingApi";
 
 type Props = {
   date: Date;
@@ -16,72 +15,75 @@ const DayDetailView: React.FC<Props> = ({ date, onClose, onEventCreated }) => {
   const [loading, setLoading] = useState(true);
   const [showBookingModal, setShowBookingModal] = useState(false);
 
-  useEffect(() => {
-    const loadDayEvents = async () => {
-      setLoading(true);
-      try {
-        const allEvents = await getAllEvents();
-        // Filter events for this day
-        const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
-        const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
-        
-        const filtered = allEvents.filter((event) => {
-          const eventStart = new Date(event.startTime);
-          return eventStart >= dayStart && eventStart <= dayEnd;
-        });
+  const refreshDayEvents = useCallback(async () => {
+    setLoading(true);
+    try {
+      const current = await getCurrentUser();
+      const userId = extractUserId(current);
 
-        // Fetch users for name lookup (company-limited)
-        let userMap: Record<number, string> = {};
-        try {
-          // fetch current user to determine company
-          const current = await getCurrentUser();
-          const rawCompany = (current && (current.CompanyId ?? current.companyId)) ?? null;
-          const companyId = rawCompany != null ? (typeof rawCompany === 'string' ? parseInt(rawCompany, 10) : rawCompany) : null;
-          if (companyId) {
-            const session = getStoredAuthSession();
-            let effectiveSession = session;
-            if (!effectiveSession) {
-              try {
-                const raw = sessionStorage.getItem('authSession') ?? localStorage.getItem('authSession');
-                if (raw) {
-                  const parsed = JSON.parse(raw) as any;
-                  if (parsed && (parsed.token ?? parsed.Token)) {
-                    effectiveSession = { id: parsed.id ?? parsed.ID ?? '', name: parsed.name ?? parsed.Name ?? '', email: parsed.email ?? parsed.Email ?? '', role: parsed.role ?? parsed.Role ?? 'user', token: parsed.token ?? parsed.Token ?? '', expiresAt: parsed.expiresAt ?? parsed.ExpiresAt ?? new Date(Date.now() + 3600_000).toISOString() };
-                  }
+      // Filter events for this day
+      const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
+      const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+      
+      const allEvents = userId != null ? await getAllEvents(userId) : [];
+      const filtered = allEvents.filter((event) => {
+        const eventStart = new Date(event.startTime);
+        return eventStart >= dayStart && eventStart <= dayEnd;
+      });
+
+      // Fetch users for name lookup (company-limited)
+      let userMap: Record<number, string> = {};
+      try {
+        const companyId = normalizeId(current?.CompanyId ?? current?.companyId);
+        if (companyId) {
+          const session = getStoredAuthSession();
+          let effectiveSession = session;
+          if (!effectiveSession) {
+            try {
+              const raw = sessionStorage.getItem('authSession') ?? localStorage.getItem('authSession');
+              if (raw) {
+                const parsed = JSON.parse(raw) as any;
+                if (parsed && (parsed.token ?? parsed.Token)) {
+                  effectiveSession = { id: parsed.id ?? parsed.ID ?? '', name: parsed.name ?? parsed.Name ?? '', email: parsed.email ?? parsed.Email ?? '', role: parsed.role ?? parsed.Role ?? 'user', token: parsed.token ?? parsed.Token ?? '', expiresAt: parsed.expiresAt ?? parsed.ExpiresAt ?? new Date(Date.now() + 3600_000).toISOString() };
                 }
-              } catch {
-                // ignore
               }
-            }
-            const headers: Record<string,string> = { 'Content-Type': 'application/json' };
-            if (effectiveSession) headers['Authorization'] = `Bearer ${effectiveSession.token}`;
-            const res = await fetch(`/api/users/company/${companyId}`, { headers });
-            if (res.ok) {
-              const users = await res.json();
-              users.forEach((u: any) => {
-                const id = typeof (u.id ?? u.Id) === 'string' ? parseInt(u.id ?? u.Id, 10) : (u.id ?? u.Id);
-                userMap[id] = u.name;
-              });
+            } catch {
+              // ignore
             }
           }
-        } catch (e) {
-          console.warn('Failed to load users for attendee name lookup', e);
+          const headers: Record<string,string> = { 'Content-Type': 'application/json' };
+          if (effectiveSession) headers['Authorization'] = `Bearer ${effectiveSession.token}`;
+          const res = await fetch(`/api/users/company/${companyId}`, { headers });
+          if (res.ok) {
+            const users = await res.json();
+            users.forEach((u: any) => {
+              const id = normalizeId(u.id ?? u.Id);
+              if (id != null) {
+                userMap[id] = u.name;
+              }
+            });
+          }
         }
-
-        const sorted = filtered.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-        // attach attendee names for display
-        const withNames = sorted.map((ev) => ({ ...ev, attendeeNames: (ev.attendeeIds || []).map((id) => userMap[id] ?? String(id)) }));
-        // @ts-ignore we add attendeeNames dynamically
-        setDayEvents(withNames as any);
-      } catch (err) {
-        console.error('Failed to load day events:', err);
-      } finally {
-        setLoading(false);
+      } catch (e) {
+        console.warn('Failed to load users for attendee name lookup', e);
       }
-    };
 
-    loadDayEvents();
+      const sorted = filtered.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+      // attach attendee names for display
+      const withNames = sorted.map((ev) => ({ ...ev, attendeeNames: (ev.attendeeIds || []).map((id) => userMap[id] ?? String(id)) }));
+      // @ts-ignore we add attendeeNames dynamically
+      setDayEvents(withNames as any);
+    } catch (err) {
+      console.error('Failed to load day events:', err);
+      setDayEvents([]);
+    } finally {
+      setLoading(false);
+    }
   }, [date]);
+
+  useEffect(() => {
+    void refreshDayEvents();
+  }, [refreshDayEvents]);
 
   const formatTime = (dateString: string): string => {
     const d = new Date(dateString);
@@ -174,19 +176,7 @@ const DayDetailView: React.FC<Props> = ({ date, onClose, onEventCreated }) => {
           date={date}
           onClose={() => setShowBookingModal(false)}
           onBooked={async () => {
-            // Reload events
-            const allEvents = await getAllEvents();
-            const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
-            const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
-            
-            const filtered = allEvents.filter((event) => {
-              const eventStart = new Date(event.startTime);
-              return eventStart >= dayStart && eventStart <= dayEnd;
-            });
-
-            setDayEvents(filtered.sort((a, b) => 
-              new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-            ));
+            await refreshDayEvents();
             onEventCreated?.();
           }}
         />
