@@ -31,6 +31,12 @@ export function generateCalendarDays(year: number, month: number): CalendarDate[
     days.push({ day: days.length - (startDayOfWeek + totalDays) + 1, isCurrentMonth: false });
   }
 
+  // If the last week contains no current-month days, drop it to avoid an empty bottom row.
+  const lastWeek = days.slice(-7);
+  if (lastWeek.every((d) => !d.isCurrentMonth)) {
+    days.splice(-7, 7);
+  }
+
   return days;
 }
 
@@ -158,9 +164,9 @@ const CalendarComponent: React.FC = () => {
             setSelectedDate(dt);
           };
 
-          // compute date key for events only when in current month
+          // Only mark events for the active month to avoid matching on same day numbers in other months
           const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`;
-          const hasEvents = !!bookedDates[dateKey];
+          const hasEvents = date.isCurrentMonth ? !!bookedDates[dateKey] : false;
 
           return <Day key={i} day={date.day} isCurrentMonth={date.isCurrentMonth} onClick={handleClick} hasEvents={hasEvents} />;
         })}

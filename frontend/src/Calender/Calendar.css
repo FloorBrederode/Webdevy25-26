@@ -127,7 +127,7 @@
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    grid-template-rows: repeat(7, 1fr);
+    grid-auto-rows: 1fr;
     gap: 6px;
     flex: 1;
     overflow: hidden;
