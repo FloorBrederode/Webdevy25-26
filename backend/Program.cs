@@ -45,6 +45,7 @@ static void ConfigureServices(IServiceCollection services, ConfigurationManager 
 
     services.AddScoped<IUserService, UserService>();
     services.AddScoped<IEventService, EventService>();
+    services.AddScoped<IBookingService, BookingService>();
     services.AddScoped<IOpenaiConnector, OpenaiConnector>();
     services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
     services.AddScoped<IRoomAvailabilityService, RoomAvailabilityService>();
