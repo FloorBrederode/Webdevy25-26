@@ -38,7 +38,8 @@ public sealed class SummarizeController : ControllerBase
         try
         {
             var answer = await _connector.AskGPT(userId);
-            return Ok(answer);
+            // Return as plain text so the client doesn't have to unescape JSON formatting characters.
+            return Content(answer, "text/plain", System.Text.Encoding.UTF8);
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.TooManyRequests)
         {
