@@ -122,12 +122,12 @@ Use that schedule to produce the markdown output exactly as specified above.";
     {
         if (string.IsNullOrWhiteSpace(_options.ConnectionLink))
         {
-            throw new InvalidOperationException("OpenAI connection link is not configured.");
+            throw new InvalidOperationException("Connection link is not configured.");
         }
 
         if (string.IsNullOrWhiteSpace(_options.ApiKey))
         {
-            throw new InvalidOperationException("OpenAI API key is not configured.");
+            throw new InvalidOperationException("API key is not configured.");
         }
 
         var start = DateTime.UtcNow.Date;
@@ -137,11 +137,18 @@ Use that schedule to produce the markdown output exactly as specified above.";
         var scheduleSection = BuildScheduleSection(start, end, events);
         var prompt = $"{_prompt}\n\n{scheduleSection}";
 
-        var model = string.IsNullOrWhiteSpace(_options.Model) ? "gpt-4o-mini" : _options.Model;
+        var model = _options.Model;
         var payload = JsonSerializer.Serialize(new
         {
             model,
-            input = prompt
+            messages = new[]
+            {
+                new
+                {
+                    role = "user",
+                    content = prompt
+                }
+            }
         });
         using var content = new StringContent(payload, Encoding.UTF8, "application/json");
         var response = await _client.PostAsync(_options.ConnectionLink, content);
@@ -171,7 +178,8 @@ Use that schedule to produce the markdown output exactly as specified above.";
             throw new HttpRequestException($"OpenAI request failed ({(int)response.StatusCode}): {detail}", null, response.StatusCode);
         }
 
-        return await response.Content.ReadAsStringAsync();
+        var body = await response.Content.ReadAsStringAsync();
+        return ExtractAssistantMessage(body);
     }
 
     private static string BuildScheduleSection(DateTime start, DateTime end, IReadOnlyCollection<Event> events)
@@ -200,4 +208,45 @@ Use that schedule to produce the markdown output exactly as specified above.";
         response.Headers.TryGetValues(headerName, out var values)
             ? $"{headerName}: {values.FirstOrDefault()}"
             : string.Empty;
+
+    private static string ExtractAssistantMessage(string body)
+    {
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.TryGetProperty("choices", out var choices) && choices.ValueKind == JsonValueKind.Array && choices.GetArrayLength() > 0)
+            {
+                var first = choices[0];
+                if (first.TryGetProperty("message", out var msg) && msg.TryGetProperty("content", out var contentEl))
+                {
+                    var content = contentEl.GetString();
+                    if (!string.IsNullOrWhiteSpace(content))
+                    {
+                        return content.Trim();
+                    }
+                }
+
+                if (first.TryGetProperty("text", out var textEl))
+                {
+                    var content = textEl.GetString();
+                    if (!string.IsNullOrWhiteSpace(content))
+                    {
+                        return content.Trim();
+                    }
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            // fall through to raw
+        }
+
+        // Remove excessive leading whitespace if the service returned plain text
+        return body.Trim();
+    }
 }
