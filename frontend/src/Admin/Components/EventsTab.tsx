@@ -34,7 +34,7 @@ export default function EventsTab() {
 
   return (
     <div className="main-grid">
-      {/* Left Panel - Upcoming Events */}
+      {/* Left Panel - Upcoming Events (work events) */}
       <div className="left-panel">
         <h2>Upcoming Events</h2>
         {upcomingEvents.length === 0 ? (
@@ -53,11 +53,12 @@ export default function EventsTab() {
         )}
       </div>
 
-      {/* Right Panel - Past Events */}
+
+      {/* left panel personal events */}
       <div className="right-panel">
-        <h2>Past Events</h2>
+        <h2>Personal Events</h2>
         {pastEvents.length === 0 ? (
-          <p>No past events</p>
+          <p>No personal events</p>
         ) : (
           <ul>
             {pastEvents.map((e) => (
@@ -74,3 +75,24 @@ export default function EventsTab() {
     </div>
   );
 }
+
+
+{/* Right Panel - Past Events
+      <div className="right-panel">
+        <h2>Past Events</h2>
+        {pastEvents.length === 0 ? (
+          <p>No past events</p>
+        ) : (
+          <ul>
+            {pastEvents.map((e) => (
+              <li key={e.id}>
+                <strong>{e.name}</strong> <br />
+                {new Date(e.start_time).toLocaleString()} -{" "}
+                {new Date(e.end_time).toLocaleString()} <br />
+                {e.description}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div> */}
+
